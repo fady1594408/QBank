@@ -73,7 +73,7 @@
 <!-- Image zoom modal -->
 <div id="imgModal">
   <button onclick="closeModal()">✕ Close</button>
-  <img id="modalImg" src="" alt="Zoomed image">
+  <img id="modalImg" src="" alt="Zoomed image" referrerpolicy="no-referrer" crossorigin="anonymous">
 </div>
 
 <div class="wrap">
@@ -149,7 +149,7 @@
 
       <!-- Image area -->
       <div id="imageBox">
-        <img id="questionImage" src="" alt="Clinical image" onclick="openModal(this.src)">
+        <img id="questionImage" src="" alt="Clinical image" referrerpolicy="no-referrer" crossorigin="anonymous" onclick="openModal(this.src)">
         <div id="imageCaption"></div>
       </div>
 
@@ -199,42 +199,40 @@
   const LS_API  = 'step1_api_key_v3';
   const API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
 
-  // High-yield image map: keyword → Wikimedia Commons direct image URL (open license)
+  // High-yield image map using Wikimedia Special:Redirect which allows external embedding
   const IMAGE_MAP = {
-    'burkitt':         { url:'https://upload.wikimedia.org/wikipedia/commons/thumb/0/04/Burkitt_lymphoma_cytology.jpg/400px-Burkitt_lymphoma_cytology.jpg', caption:'Burkitt lymphoma — "starry sky" pattern on histology' },
-    'starry sky':      { url:'https://upload.wikimedia.org/wikipedia/commons/thumb/0/04/Burkitt_lymphoma_cytology.jpg/400px-Burkitt_lymphoma_cytology.jpg', caption:'Burkitt lymphoma — "starry sky" pattern' },
-    'psammoma':        { url:'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3d/Papillary_thyroid_carcinoma_histology.jpg/400px-Papillary_thyroid_carcinoma_histology.jpg', caption:'Papillary thyroid carcinoma — psammoma bodies' },
-    'reed-sternberg':  { url:'https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Reed-Sternberg_lymphocyte_2.jpg/400px-Reed-Sternberg_lymphocyte_2.jpg', caption:'Reed-Sternberg cell — Hodgkin lymphoma' },
-    'hodgkin':         { url:'https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Reed-Sternberg_lymphocyte_2.jpg/400px-Reed-Sternberg_lymphocyte_2.jpg', caption:'Reed-Sternberg cell — Hodgkin lymphoma' },
-    'aschoff':         { url:'https://upload.wikimedia.org/wikipedia/commons/thumb/3/31/Rheumatic_fever_-_Aschoff_nodule_-_very_high_mag.jpg/400px-Rheumatic_fever_-_Aschoff_nodule_-_very_high_mag.jpg', caption:'Aschoff body — rheumatic fever' },
-    'rheumatic fever': { url:'https://upload.wikimedia.org/wikipedia/commons/thumb/3/31/Rheumatic_fever_-_Aschoff_nodule_-_very_high_mag.jpg/400px-Rheumatic_fever_-_Aschoff_nodule_-_very_high_mag.jpg', caption:'Aschoff body — rheumatic fever' },
-    'auer rod':        { url:'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9d/AML-M2.jpg/400px-AML-M2.jpg', caption:'Auer rod — acute myeloid leukemia (AML)' },
-    'aml':             { url:'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9d/AML-M2.jpg/400px-AML-M2.jpg', caption:'Auer rod in AML blast' },
-    'philadelphia':    { url:'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5b/Philadelphia_chromosome.png/400px-Philadelphia_chromosome.png', caption:'Philadelphia chromosome t(9;22) — CML' },
-    'cml':             { url:'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5b/Philadelphia_chromosome.png/400px-Philadelphia_chromosome.png', caption:'Philadelphia chromosome — CML' },
-    'target cell':     { url:'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b6/Target_cell_2.jpg/400px-Target_cell_2.jpg', caption:'Target cells — thalassemia, liver disease, HbC' },
-    'thalassemia':     { url:'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b6/Target_cell_2.jpg/400px-Target_cell_2.jpg', caption:'Target cells — thalassemia' },
-    'sickle cell':     { url:'https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Sickle_cell_01.jpg/400px-Sickle_cell_01.jpg', caption:'Sickle cells on peripheral blood smear' },
-    'spherocyte':      { url:'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Hereditary_Spherocytosis_smear_2010.jpg/400px-Hereditary_Spherocytosis_smear_2010.jpg', caption:'Spherocytes — hereditary spherocytosis' },
-    'koilocyte':       { url:'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9f/Koilocyte.jpg/400px-Koilocyte.jpg', caption:'Koilocytes — HPV cytopathic effect' },
-    'hpv':             { url:'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9f/Koilocyte.jpg/400px-Koilocyte.jpg', caption:'Koilocytes — HPV infection' },
-    'ground glass':    { url:'https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Ground_glass_opacification_on_HRCT.jpg/400px-Ground_glass_opacification_on_HRCT.jpg', caption:'Ground-glass opacities on CT — interstitial lung disease' },
-    'interstitial lung':{ url:'https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Ground_glass_opacification_on_HRCT.jpg/400px-Ground_glass_opacification_on_HRCT.jpg', caption:'Ground-glass pattern — ILD' },
-    'keratin pearl':   { url:'https://upload.wikimedia.org/wikipedia/commons/thumb/5/52/Squamous_cell_carcinoma_-_well_differentiated_-_very_high_mag.jpg/400px-Squamous_cell_carcinoma_-_well_differentiated_-_very_high_mag.jpg', caption:'Keratin pearls — squamous cell carcinoma' },
-    'squamous cell':   { url:'https://upload.wikimedia.org/wikipedia/commons/thumb/5/52/Squamous_cell_carcinoma_-_well_differentiated_-_very_high_mag.jpg/400px-Squamous_cell_carcinoma_-_well_differentiated_-_very_high_mag.jpg', caption:'Keratin pearls — squamous cell carcinoma' },
-    'gierke':          { url:'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7a/Von_Gierke_disease.jpg/400px-Von_Gierke_disease.jpg', caption:'Glycogen storage in hepatocytes — Von Gierke disease' },
-    'niemann':         { url:'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6e/Niemann_Pick.jpg/400px-Niemann_Pick.jpg', caption:'Foam cells — Niemann-Pick disease' },
-    'gaucher':         { url:'https://upload.wikimedia.org/wikipedia/commons/thumb/3/34/Gaucher_disease_-_very_high_mag.jpg/400px-Gaucher_disease_-_very_high_mag.jpg', caption:'Gaucher cells — crinkled tissue paper appearance' },
-    'paget':           { url:'https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Paget_disease_bone_-_high_mag.jpg/400px-Paget_disease_bone_-_high_mag.jpg', caption:'Mosaic pattern — Paget disease of bone' },
-    'actinic keratosis':{ url:'https://upload.wikimedia.org/wikipedia/commons/thumb/2/24/Actinic_keratosis_2.jpg/400px-Actinic_keratosis_2.jpg', caption:'Actinic keratosis — precancerous lesion' },
-    'basal cell':      { url:'https://upload.wikimedia.org/wikipedia/commons/thumb/6/66/Basal_cell_carcinoma.jpg/400px-Basal_cell_carcinoma.jpg', caption:'Palisading nuclei — basal cell carcinoma' },
-    'heart failure':   { url:'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f0/Heart_failure_-_pulmonary_congestion.jpg/400px-Heart_failure_-_pulmonary_congestion.jpg', caption:'Pulmonary congestion — congestive heart failure' },
-    'diabetic nephropathy':{ url:'https://upload.wikimedia.org/wikipedia/commons/thumb/8/89/Kimmelstiel-wilson.jpg/400px-Kimmelstiel-wilson.jpg', caption:'Kimmelstiel-Wilson nodules — diabetic nephropathy' },
-    'kimmelstiel':     { url:'https://upload.wikimedia.org/wikipedia/commons/thumb/8/89/Kimmelstiel-wilson.jpg/400px-Kimmelstiel-wilson.jpg', caption:'Kimmelstiel-Wilson nodules — diabetic nephropathy' },
-    'wire loop':       { url:'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e7/Wire_loop_lesions_in_Lupus_nephritis.jpg/400px-Wire_loop_lesions_in_Lupus_nephritis.jpg', caption:'Wire-loop lesions — lupus nephritis' },
-    'lupus nephritis': { url:'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e7/Wire_loop_lesions_in_Lupus_nephritis.jpg/400px-Wire_loop_lesions_in_Lupus_nephritis.jpg', caption:'Wire-loop lesions — lupus nephritis' },
-    'melanoma':        { url:'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e9/Melanoma.jpg/400px-Melanoma.jpg', caption:'Asymmetric pigmented lesion — melanoma' },
-    'pemphigus':       { url:'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Pemphigus_vulgaris2.jpg/400px-Pemphigus_vulgaris2.jpg', caption:'Flaccid bullae — pemphigus vulgaris' },
+    'burkitt':              { url:'https://commons.wikimedia.org/wiki/Special:Redirect/file/Burkitt_lymphoma_cytology.jpg?width=480', caption:'Burkitt lymphoma — "starry sky" pattern on histology' },
+    'starry sky':           { url:'https://commons.wikimedia.org/wiki/Special:Redirect/file/Burkitt_lymphoma_cytology.jpg?width=480', caption:'Burkitt lymphoma — "starry sky" pattern' },
+    'reed-sternberg':       { url:'https://commons.wikimedia.org/wiki/Special:Redirect/file/Reed-Sternberg_lymphocyte_2.jpg?width=480', caption:'Reed-Sternberg cell — Hodgkin lymphoma' },
+    'hodgkin':              { url:'https://commons.wikimedia.org/wiki/Special:Redirect/file/Reed-Sternberg_lymphocyte_2.jpg?width=480', caption:'Reed-Sternberg cell — Hodgkin lymphoma' },
+    'psammoma':             { url:'https://commons.wikimedia.org/wiki/Special:Redirect/file/Papillary_thyroid_carcinoma_histology.jpg?width=480', caption:'Papillary thyroid carcinoma — psammoma bodies' },
+    'aschoff':              { url:'https://commons.wikimedia.org/wiki/Special:Redirect/file/Rheumatic_fever_-_Aschoff_nodule_-_very_high_mag.jpg?width=480', caption:'Aschoff body — rheumatic fever' },
+    'rheumatic fever':      { url:'https://commons.wikimedia.org/wiki/Special:Redirect/file/Rheumatic_fever_-_Aschoff_nodule_-_very_high_mag.jpg?width=480', caption:'Aschoff body — rheumatic fever' },
+    'auer rod':             { url:'https://commons.wikimedia.org/wiki/Special:Redirect/file/AML-M2.jpg?width=480', caption:'Auer rod — acute myeloid leukemia (AML)' },
+    'aml':                  { url:'https://commons.wikimedia.org/wiki/Special:Redirect/file/AML-M2.jpg?width=480', caption:'Auer rod in AML blast' },
+    'philadelphia':         { url:'https://commons.wikimedia.org/wiki/Special:Redirect/file/Philadelphia_chromosome.png?width=480', caption:'Philadelphia chromosome t(9;22) — CML' },
+    'cml':                  { url:'https://commons.wikimedia.org/wiki/Special:Redirect/file/Philadelphia_chromosome.png?width=480', caption:'Philadelphia chromosome — CML' },
+    'target cell':          { url:'https://commons.wikimedia.org/wiki/Special:Redirect/file/Target_cell_2.jpg?width=480', caption:'Target cells — thalassemia, liver disease, HbC' },
+    'thalassemia':          { url:'https://commons.wikimedia.org/wiki/Special:Redirect/file/Target_cell_2.jpg?width=480', caption:'Target cells — thalassemia' },
+    'sickle cell':          { url:'https://commons.wikimedia.org/wiki/Special:Redirect/file/Sickle_cell_01.jpg?width=480', caption:'Sickle cells on peripheral blood smear' },
+    'spherocyte':           { url:'https://commons.wikimedia.org/wiki/Special:Redirect/file/Hereditary_Spherocytosis_smear_2010.jpg?width=480', caption:'Spherocytes — hereditary spherocytosis' },
+    'koilocyte':            { url:'https://commons.wikimedia.org/wiki/Special:Redirect/file/Koilocyte.jpg?width=480', caption:'Koilocytes — HPV cytopathic effect' },
+    'hpv':                  { url:'https://commons.wikimedia.org/wiki/Special:Redirect/file/Koilocyte.jpg?width=480', caption:'Koilocytes — HPV infection' },
+    'ground glass':         { url:'https://commons.wikimedia.org/wiki/Special:Redirect/file/Ground_glass_opacification_on_HRCT.jpg?width=480', caption:'Ground-glass opacities on CT — interstitial lung disease' },
+    'interstitial lung':    { url:'https://commons.wikimedia.org/wiki/Special:Redirect/file/Ground_glass_opacification_on_HRCT.jpg?width=480', caption:'Ground-glass pattern — ILD' },
+    'keratin pearl':        { url:'https://commons.wikimedia.org/wiki/Special:Redirect/file/Squamous_cell_carcinoma_-_well_differentiated_-_very_high_mag.jpg?width=480', caption:'Keratin pearls — squamous cell carcinoma' },
+    'squamous cell':        { url:'https://commons.wikimedia.org/wiki/Special:Redirect/file/Squamous_cell_carcinoma_-_well_differentiated_-_very_high_mag.jpg?width=480', caption:'Keratin pearls — squamous cell carcinoma' },
+    'gaucher':              { url:'https://commons.wikimedia.org/wiki/Special:Redirect/file/Gaucher_disease_-_very_high_mag.jpg?width=480', caption:'Gaucher cells — crinkled tissue paper appearance' },
+    'niemann':              { url:'https://commons.wikimedia.org/wiki/Special:Redirect/file/Niemann_Pick.jpg?width=480', caption:'Foam cells — Niemann-Pick disease' },
+    'paget':                { url:'https://commons.wikimedia.org/wiki/Special:Redirect/file/Paget_disease_bone_-_high_mag.jpg?width=480', caption:'Mosaic pattern — Paget disease of bone' },
+    'basal cell':           { url:'https://commons.wikimedia.org/wiki/Special:Redirect/file/Basal_cell_carcinoma.jpg?width=480', caption:'Palisading nuclei — basal cell carcinoma' },
+    'kimmelstiel':          { url:'https://commons.wikimedia.org/wiki/Special:Redirect/file/Kimmelstiel-wilson.jpg?width=480', caption:'Kimmelstiel-Wilson nodules — diabetic nephropathy' },
+    'diabetic nephropathy': { url:'https://commons.wikimedia.org/wiki/Special:Redirect/file/Kimmelstiel-wilson.jpg?width=480', caption:'Kimmelstiel-Wilson nodules — diabetic nephropathy' },
+    'wire loop':            { url:'https://commons.wikimedia.org/wiki/Special:Redirect/file/Wire_loop_lesions_in_Lupus_nephritis.jpg?width=480', caption:'Wire-loop lesions — lupus nephritis' },
+    'lupus nephritis':      { url:'https://commons.wikimedia.org/wiki/Special:Redirect/file/Wire_loop_lesions_in_Lupus_nephritis.jpg?width=480', caption:'Wire-loop lesions — lupus nephritis' },
+    'melanoma':             { url:'https://commons.wikimedia.org/wiki/Special:Redirect/file/Melanoma.jpg?width=480', caption:'Asymmetric pigmented lesion — melanoma' },
+    'pemphigus':            { url:'https://commons.wikimedia.org/wiki/Special:Redirect/file/Pemphigus_vulgaris2.jpg?width=480', caption:'Flaccid bullae — pemphigus vulgaris' },
+    'actinic keratosis':    { url:'https://commons.wikimedia.org/wiki/Special:Redirect/file/Actinic_keratosis_2.jpg?width=480', caption:'Actinic keratosis — precancerous lesion' },
   };
 
   let QUESTIONS = [];
