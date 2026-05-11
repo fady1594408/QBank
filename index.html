@@ -58,7 +58,7 @@
   <div class="top">
     <div>
       <h1>Step 1 AI QBank</h1>
-      <div class="sub">Generate original USMLE-style questions with Gemini. This build uses the Gemini 2.0 Flash generateContent endpoint and is most reliable when hosted on GitHub Pages.</div>
+      <div class="sub">Generate original USMLE-style questions with Gemini. This build uses the Gemini 2.5 Flash generateContent endpoint (free tier) and is most reliable when hosted on GitHub Pages.</div>
       <div class="small" style="margin-top:4px;">Best deployment: GitHub Pages. Raw local files can work unpredictably with browser storage and cross-origin requests.</div>
       <div class="small" style="margin-top:4px;">Status messages appear in the box at the top right and below the question panel.</div>
     </div>
@@ -285,7 +285,7 @@
     const prompt = `You are a USMLE Step 1 question writer. Write ONE high-quality single-best-answer vignette question about ${system}. Difficulty: ${difficulty}.${topic ? ' Focus topic: ' + topic + '.' : ''} Return ONLY valid JSON with exactly this shape: {"stem":"...","options":["...","...","...","...","..."],"answerIndex":0,"explanation":"..."}. Rules: 1) Include age, sex, relevant history, physical exam, labs/imaging if useful. 2) Ask a mechanism/pathophysiology/pharmacology question. 3) Give exactly 5 clinically plausible answer choices. 4) No markdown, no backticks, no extra commentary. 5) Explanation should be concise but teaching-oriented.`;
 
     const body = { contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.35, topP: 0.9, maxOutputTokens: 900 } };
-    const endpoint = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + encodeURIComponent(apiKey);
+    const endpoint = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview:generateContent?key=' + encodeURIComponent(apiKey);
 
     try {
       const res = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
@@ -303,7 +303,7 @@
       rebuildDeck();
       setStatus('Question generated and saved locally.', 'ok');
     } catch (e) {
-      setStatus('Generation failed: ' + e.message + '\n\nCommon fixes: 1) host on GitHub Pages, 2) make sure the API key is valid, 3) ensure browser network access is not blocked.', 'err');
+      setStatus('Generation failed: ' + e.message + '\n\nCommon fixes: 1) Make sure the API key is from aistudio.google.com (not Google Cloud Console). 2) Try a fresh key from a new AI Studio project. 3) The app uses gemini-2.5-flash-preview which has a free tier of 10 req/min and 250/day.', 'err');
     } finally {
       $('generateBtn').disabled = false;
       $('generateBtn').textContent = 'Generate AI question';
