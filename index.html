@@ -269,14 +269,16 @@
       .replace(/```/g, '')
       .trim();
     try { return JSON.parse(cleaned); } catch {}
+    const blocks = cleaned.match(/\{[\s\S]*?\}/g) || [];
+    for (const block of blocks) {
+      try { return JSON.parse(block); } catch {}
+    }
     const first = cleaned.indexOf('{'), last = cleaned.lastIndexOf('}');
     if (first >= 0 && last > first) {
       const slice = cleaned.slice(first, last + 1);
       try { return JSON.parse(slice); } catch {}
-      const match = slice.match(/\{[\s\S]*\}/);
-      if (match) return JSON.parse(match[0]);
     }
-    throw new Error('Could not parse JSON from model.');
+    throw new Error('Could not parse JSON from model. RAW=' + cleaned.slice(0, 1200));
   }
 
   async function generateQuestion() {
@@ -303,11 +305,12 @@
       const text = data?.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('\n') || '';
       let obj;
       try { obj = parseModelJSON(text); } catch (err) {
-        const match = text.match(/\{[\s\S]*\}/);
-        if (!match) throw err;
-        obj = JSON.parse(match[0]);
+        throw new Error(err.message + '
+
+RAW MODEL OUTPUT:
+' + text.slice(0, 2000));
       }
-      if (!obj.stem || !Array.isArray(obj.options) || obj.options.length !== 5 || typeof obj.answerIndex !== 'number') throw new Error('Model returned invalid fields.');
+      if (!obj.stem || !Array.isArray(obj.options) || obj.options.length !== 5 || typeof obj.answerIndex !== 'number') throw new Error('Model returned invalid fields. RAW=' + text.slice(0, 1200));
       const q = { id: QUESTIONS.length + 1, system, discipline: 'Mixed', difficulty, stem: obj.stem, options: obj.options, answerIndex: obj.answerIndex, explanation: obj.explanation || '' };
       QUESTIONS.push(q);
       persistQuestions();
