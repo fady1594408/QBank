@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Step 1 AI QBank</title>
+<style>
+  :root{--bg:#f7f7f5;--card:#fff;--muted:#667085;--text:#101828;--line:#d0d5dd;--primary:#0f766e;--primary2:#115e59;--good:#166534;--bad:#9d174d}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;background:var(--bg);color:var(--text)}
+  .wrap{max-width:1200px;margin:0 auto;padding:24px}
+  .top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:18px}
+  h1{margin:0;font-size:34px}
+  .sub{margin-top:6px;color:var(--muted)}
+  .grid{display:grid;grid-template-columns:2fr 1fr;gap:18px}
+  @media(max-width:980px){.grid{grid-template-columns:1fr}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 20px;box-shadow:0 1px 2px rgba(16,24,40,.04)}
+  .pill{display:inline-block;padding:6px 10px;border-radius:999px;background:#eef2f7;color:#344054;font-size:12px;margin:0 6px 8px 0}
+  .controlrow{display:flex;gap:10px;flex-wrap:wrap;align-items:end;margin:12px 0 8px}
+  label{font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:4px}
+  input,select{padding:8px 10px;border:1px solid var(--line);border-radius:10px;font-size:14px;min-width:170px;background:#fff}
+  input[type=password],input[type=text]{min-width:260px}
+  .btn{border:none;border-radius:999px;padding:10px 16px;font-size:14px;cursor:pointer}
+  .primary{background:var(--primary);color:#fff}
+  .primary:hover{background:var(--primary2)}
+  .secondary{background:#f2f4f7;color:#101828;border:1px solid var(--line)}
+  .secondary:hover{background:#e5e7eb}
+  .choice{display:flex;gap:12px;align-items:flex-start;width:100%;text-align:left;padding:12px 14px;margin:8px 0;border:1px solid var(--line);border-radius:12px;background:#fafafa;cursor:pointer;font-size:15px}
+  .choice:hover{background:#f3f4f6}
+  .choice.selected{border-color:var(--primary);background:#ecfeff}
+  .choice.correct{border-color:var(--good);background:#f0fdf4}
+  .choice.wrong{border-color:var(--bad);background:#fdf2f8}
+  .letter{min-width:30px;height:30px;border-radius:999px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-weight:600;background:#fff;font-size:14px}
+  #stem{margin:10px 0 14px;font-size:16px;line-height:1.6;white-space:normal}
+  .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+  .statbox{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px}
+  .stat{border:1px solid var(--line);border-radius:12px;padding:12px}
+  .stat .label{color:var(--muted);font-size:13px}
+  .stat .value{font-size:26px;font-weight:700;margin-top:4px}
+  .section{font-size:13px;color:var(--muted);margin:12px 0 6px}
+  .chips{display:flex;gap:6px;flex-wrap:wrap}
+  .chip{border:1px solid var(--line);border-radius:999px;padding:6px 10px;background:#f9fafb;cursor:pointer;font-size:13px}
+  .chip.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+  #feedback{margin-top:12px;font-weight:700;font-size:15px}
+  #feedback.good{color:var(--good)}
+  #feedback.bad{color:var(--bad)}
+  #explanationBox{margin-top:12px;padding-top:10px;border-top:1px solid var(--line);font-size:14px;line-height:1.55}
+  #status{margin-top:10px;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:#f9fafb;color:var(--muted);font-size:13px;white-space:pre-wrap}
+  #status.ok{border-color:#86efac;background:#f0fdf4;color:var(--good)}
+  #status.err{border-color:#f9a8d4;background:#fff1f2;color:var(--bad)}
+  .note{margin-top:10px;color:var(--muted);font-size:13px;line-height:1.5}
+  .small{font-size:12px;color:var(--muted)}
+  .topkey{max-width:360px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div>
+      <h1>Step 1 AI QBank</h1>
+      <div class="sub">Generate original USMLE-style questions with Gemini. If you want the most reliable version, host this page on GitHub Pages instead of opening it as a raw file.</div>
+      <div class="small" style="margin-top:4px;">Status messages appear in the box at the top right and below the question panel.</div>
+    </div>
+    <div class="card topkey">
+      <div style="font-size:13px;color:var(--muted);font-weight:600">Gemini API key</div>
+      <div class="small" style="margin-top:4px">Paste your key and click Save. The app also tries to auto-save it after generation.</div>
+      <input id="apiKeyInput" type="password" placeholder="Paste your Gemini API key">
+      <div class="actions" style="margin-top:10px">
+        <button class="btn secondary" id="saveKeyBtn" type="button">Save key</button>
+        <button class="btn secondary" id="clearKeyBtn" type="button">Clear</button>
+      </div>
+      <div id="keyHint" class="small" style="margin-top:8px"></div>
+    </div>
+  </div>
+
+  <div id="status">Ready.</div>
+
+  <div class="grid">
+    <div class="card">
+      <div>
+        <span class="pill" id="qid">Question 0</span>
+        <span class="pill" id="tag1"></span>
+        <span class="pill" id="tag2"></span>
+        <span class="pill" id="tag3"></span>
+      </div>
+
+      <div class="controlrow">
+        <label>System
+          <select id="systemSelect">
+            <option>Cardiovascular</option><option>Respiratory</option><option>Renal</option><option>Gastrointestinal</option>
+            <option>Endocrine</option><option>Neurology</option><option>Hematology/Oncology</option><option>Rheumatology</option>
+            <option>Microbiology/Infectious disease</option><option>Immunology</option><option>Biochemistry/Metabolism</option><option>Behavioral sciences</option>
+          </select>
+        </label>
+        <label>Difficulty
+          <select id="difficultySelect"><option>Basic</option><option selected>Intermediate</option><option>Advanced</option></select>
+        </label>
+        <label>Focus topic
+          <input id="topicInput" type="text" placeholder="e.g. heart failure remodeling">
+        </label>
+        <button class="btn primary" id="generateBtn" type="button">Generate AI question</button>
+      </div>
+
+      <div id="stem">Click Generate AI question to create a new vignette.</div>
+      <div id="choices"></div>
+
+      <div class="actions">
+        <button class="btn primary" id="submitBtn" type="button" disabled>Submit</button>
+        <button class="btn secondary" id="nextBtn" type="button" disabled>Next saved question</button>
+        <button class="btn secondary" id="resetBtn" type="button">Reset stats</button>
+      </div>
+
+      <div id="feedback"></div>
+      <div id="explanationBox"><strong>Explanation</strong><div id="explanation">No question loaded yet.</div></div>
+    </div>
+
+    <div class="card">
+      <h2 style="margin-top:0">Session overview</h2>
+      <div class="statbox">
+        <div class="stat"><div class="label">Attempted</div><div class="value" id="attempted">0</div></div>
+        <div class="stat"><div class="label">Correct</div><div class="value" id="correct">0</div></div>
+        <div class="stat"><div class="label">Accuracy</div><div class="value" id="accuracy">0%</div></div>
+        <div class="stat"><div class="label">Saved questions</div><div class="value" id="savedCount">0</div></div>
+      </div>
+
+      <div class="section">System filters</div>
+      <div class="chips" id="systemChips"></div>
+
+      <div class="section">Difficulty filters</div>
+      <div class="chips" id="difficultyChips"></div>
+
+      <div class="note">If saving or generating still fails, the most likely cause is opening the page as a local file. Use the GitHub Pages option below, which makes this reliable.</div>
+      <div class="note"><strong>Recommended pivot:</strong> host this as a static site on GitHub Pages. Then the Gemini API calls and localStorage work consistently in the browser.</div>
+    </div>
+  </div>
+</div>
+<script>
+(() => {
+  const LS_KEY = 'step1_gemini_questions_v2';
+  const LS_API = 'step1_gemini_api_key_v2';
+  const KEY_LIMIT = 100;
+  let QUESTIONS = [];
+  let deck = [];
+  let current = 0;
+  let selected = null;
+  let submitted = false;
+  let attempted = 0;
+  let correct = 0;
+  let activeSystems = {};
+  let activeDifficulties = {};
+
+  const $ = id => document.getElementById(id);
+  const statusEl = $('status');
+
+  function setStatus(msg, kind='') { statusEl.className = kind ? kind : ''; statusEl.textContent = msg; }
+  function safeText(v) { return String(v ?? ''); }
+  function saveJSON(key, value) { localStorage.setItem(key, JSON.stringify(value)); }
+  function loadJSON(key, fallback) { try { const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : fallback; } catch { return fallback; } }
+  function persistQuestions() { saveJSON(LS_KEY, QUESTIONS); }
+  function persistKey() { localStorage.setItem(LS_API, $('apiKeyInput').value.trim()); }
+  function loadKey() { $('apiKeyInput').value = localStorage.getItem(LS_API) || ''; }
+
+  function uniqueValues(key) {
+    const out = [];
+    for (const q of QUESTIONS) if (!out.includes(q[key])) out.push(q[key]);
+    return out;
+  }
+
+  function rebuildFilters() {
+    activeSystems = {}; activeDifficulties = {};
+    $('systemChips').innerHTML = '';
+    $('difficultyChips').innerHTML = '';
+    const systems = uniqueValues('system');
+    const diffs = uniqueValues('difficulty');
+    for (const s of systems) addChip('systemChips', s, activeSystems, rebuildDeck);
+    for (const d of diffs) addChip('difficultyChips', d, activeDifficulties, rebuildDeck);
+  }
+
+  function addChip(containerId, label, state, onChange) {
+    state[label] = true;
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'chip active';
+    b.textContent = label;
+    b.onclick = () => { state[label] = !state[label]; b.className = state[label] ? 'chip active' : 'chip'; onChange(); };
+    $(containerId).appendChild(b);
+  }
+
+  function rebuildDeck() {
+    deck = [];
+    for (let i = 0; i < QUESTIONS.length; i++) {
+      const q = QUESTIONS[i];
+      if (activeSystems[q.system] && activeDifficulties[q.difficulty]) deck.push(i);
+    }
+    if (!deck.length) deck = QUESTIONS.map((_, i) => i);
+    current = 0;
+    updateStats();
+    renderQuestion();
+  }
+
+  function updateStats() {
+    $('attempted').textContent = attempted;
+    $('correct').textContent = correct;
+    $('accuracy').textContent = attempted ? Math.round((correct / attempted) * 100) + '%' : '0%';
+    $('savedCount').textContent = QUESTIONS.length;
+  }
+
+  function renderQuestion() {
+    if (!deck.length) {
+      $('qid').textContent = 'Question 0'; $('tag1').textContent = ''; $('tag2').textContent = ''; $('tag3').textContent = '';
+      $('stem').textContent = 'No questions yet. Generate one.';
+      $('choices').innerHTML = '';
+      $('submitBtn').disabled = true; $('nextBtn').disabled = true;
+      return;
+    }
+    selected = null; submitted = false;
+    const q = QUESTIONS[deck[current]];
+    $('qid').textContent = 'Question ' + safeText(q.id || (deck[current] + 1));
+    $('tag1').textContent = safeText(q.system);
+    $('tag2').textContent = safeText(q.discipline);
+    $('tag3').textContent = safeText(q.difficulty);
+    $('stem').textContent = safeText(q.stem);
+    $('choices').innerHTML = '';
+    $('feedback').textContent = '';
+    $('feedback').className = '';
+    $('explanation').textContent = 'Select an answer and press Submit.';
+    const letters = ['A','B','C','D','E'];
+    q.options.forEach((opt, idx) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'choice';
+      const letter = document.createElement('div'); letter.className = 'letter'; letter.textContent = letters[idx];
+      const txt = document.createElement('div'); txt.textContent = safeText(opt);
+      btn.append(letter, txt);
+      btn.onclick = () => {
+        if (submitted) return;
+        selected = idx;
+        Array.from($('choices').children).forEach(n => n.className = 'choice');
+        btn.className = 'choice selected';
+      };
+      $('choices').appendChild(btn);
+    });
+    $('submitBtn').disabled = false;
+    $('nextBtn').disabled = deck.length <= 1;
+  }
+
+  function handleSubmit() {
+    if (!deck.length) return;
+    if (selected === null) { $('feedback').textContent = 'Select an answer first.'; $('feedback').className = 'bad'; return; }
+    if (submitted) return;
+    submitted = true;
+    attempted++;
+    const q = QUESTIONS[deck[current]];
+    const nodes = Array.from($('choices').children);
+    nodes.forEach((n, idx) => { if (idx === q.answerIndex) n.classList.add('correct'); else if (idx === selected) n.classList.add('wrong'); });
+    if (selected === q.answerIndex) { correct++; $('feedback').textContent = 'Correct'; $('feedback').className = 'good'; }
+    else { $('feedback').textContent = 'Incorrect. Correct answer: ' + ['A','B','C','D','E'][q.answerIndex]; $('feedback').className = 'bad'; }
+    $('explanation').textContent = safeText(q.explanation);
+    updateStats();
+  }
+
+  function handleNext() { if (deck.length) { current = (current + 1) % deck.length; renderQuestion(); } }
+  function handleReset() { attempted = 0; correct = 0; updateStats(); renderQuestion(); }
+
+  function parseModelJSON(text) {
+    try { return JSON.parse(text); } catch {}
+    const first = text.indexOf('{'), last = text.lastIndexOf('}');
+    if (first >= 0 && last > first) return JSON.parse(text.slice(first, last + 1));
+    throw new Error('Could not parse JSON from model.');
+  }
+
+  async function generateQuestion() {
+    const apiKey = $('apiKeyInput').value.trim();
+    const system = $('systemSelect').value;
+    const difficulty = $('difficultySelect').value;
+    const topic = $('topicInput').value.trim();
+    if (!apiKey) { setStatus('Paste your Gemini API key and click Save key first.', 'err'); return; }
+
+    persistKey();
+    setStatus('Generating question...');
+    $('generateBtn').disabled = true;
+    $('generateBtn').textContent = 'Generating...';
+
+    const prompt = `You are a USMLE Step 1 question writer. Write ONE high-quality single-best-answer vignette question about ${system}. Difficulty: ${difficulty}.${topic ? ' Focus topic: ' + topic + '.' : ''} Return ONLY valid JSON with exactly this shape: {"stem":"...","options":["...","...","...","...","..."],"answerIndex":0,"explanation":"..."}. Rules: 1) Include age, sex, relevant history, physical exam, labs/imaging if useful. 2) Ask a mechanism/pathophysiology/pharmacology question. 3) Give exactly 5 clinically plausible answer choices. 4) No markdown, no backticks, no extra commentary. 5) Explanation should be concise but teaching-oriented.`;
+
+    const body = { contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.35, topP: 0.9, maxOutputTokens: 900 } };
+    const endpoint = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + encodeURIComponent(apiKey);
+
+    try {
+      const res = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      if (!res.ok) throw new Error('HTTP ' + res.status + ': ' + await res.text());
+      const data = await res.json();
+      const text = data?.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('\n') || '';
+      const obj = parseModelJSON(text);
+      if (!obj.stem || !Array.isArray(obj.options) || obj.options.length !== 5 || typeof obj.answerIndex !== 'number') throw new Error('Model returned invalid fields.');
+      const q = { id: QUESTIONS.length + 1, system, discipline: 'Mixed', difficulty, stem: obj.stem, options: obj.options, answerIndex: obj.answerIndex, explanation: obj.explanation || '' };
+      QUESTIONS.push(q);
+      persistQuestions();
+      rebuildFilters();
+      rebuildDeck();
+      current = QUESTIONS.length - 1;
+      rebuildDeck();
+      setStatus('Question generated and saved locally.', 'ok');
+    } catch (e) {
+      setStatus('Generation failed: ' + e.message + '\n\nCommon fixes: 1) host on GitHub Pages, 2) make sure the API key is valid, 3) ensure browser network access is not blocked.', 'err');
+    } finally {
+      $('generateBtn').disabled = false;
+      $('generateBtn').textContent = 'Generate AI question';
+    }
+  }
+
+  function init() {
+    QUESTIONS = loadJSON(LS_KEY, []);
+    loadKey();
+    rebuildFilters();
+    rebuildDeck();
+    updateStats();
+    $('saveKeyBtn').onclick = () => { persistKey(); setStatus('API key saved locally in this browser.', 'ok'); $('keyHint').textContent = 'Saved.'; setTimeout(() => $('keyHint').textContent = '', 1800); };
+    $('clearKeyBtn').onclick = () => { $('apiKeyInput').value = ''; localStorage.removeItem(LS_API); setStatus('API key cleared.', 'ok'); };
+    $('generateBtn').onclick = generateQuestion;
+    $('submitBtn').onclick = handleSubmit;
+    $('nextBtn').onclick = handleNext;
+    $('resetBtn').onclick = handleReset;
+    $('apiKeyInput').addEventListener('change', persistKey);
+    setStatus('Ready. If this is hosted on GitHub Pages, generation should work much more reliably than from a raw local file.', 'ok');
+  }
+
+  try { init(); } catch (e) { setStatus('App error: ' + e.message, 'err'); }
+})();
+</script>
+</body>
+</html>
