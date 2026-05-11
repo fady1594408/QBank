@@ -308,11 +308,32 @@
     setStatus('Generating ' + count + ' question' + (count > 1 ? 's' : '') + '...');
     setProgress('');
 
-    const prompt = `You are a USMLE Step 1 question writer. Write exactly ${count} USMLE-style single-best-answer vignette question(s) on the topic: ${system}.${topic ? ' Specific subtopic: ' + topic + '.' : ''} Difficulty level: ${difficulty}. Return ONLY valid JSON. If ${count} is 1, return a single JSON object. If ${count} is more than 1, return a JSON array of objects. Each object MUST have exactly these fields: {"stem":"...","options":["...","...","...","...","..."],"answerIndex":0,"explanation":"..."}. Rules: 1) Stem must be 3-5 sentences with age, sex, clinical setting, exam/lab findings. 2) Ask about mechanism, pathophysiology, or pharmacology. 3) Exactly 5 clinically plausible answer choices, each one sentence. 4) answerIndex is the 0-based index of the correct option. 5) Explanation is 2-4 sentences teaching the key concept. 6) No markdown, no code fences, no extra commentary before or after the JSON.`;
+    const prompt = `You are an expert USMLE Step 1 item writer trained on NBME, UWorld, and AMBOSS formatting standards. Write exactly ${count} USMLE Step 1 vignette question(s) about ${system}.${topic ? ' Focus subtopic: ' + topic + '.' : ''} Difficulty: ${difficulty}.
+
+STRICT FORMAT RULES — every single question MUST follow this exactly:
+
+STEM STRUCTURE (3-6 sentences):
+- Sentence 1: Patient demographics (age, sex, sometimes occupation or setting).
+- Sentences 2-4: Chief complaint, history of present illness, relevant past medical history, medications, relevant social history.
+- Sentence 5: Relevant physical exam findings, vital signs, and/or lab/imaging results as appropriate.
+- Final sentence of stem: A DIRECT QUESTION ending with a "?" such as: "Which of the following is the most likely diagnosis?", "Which of the following best explains the underlying mechanism?", "Which of the following is the most appropriate next step?", "Which of the following enzymes is deficient in this patient?", "Which of the following best describes the pathophysiology of this condition?", or similar USMLE-style lead-in question.
+
+ANSWER CHOICES:
+- Exactly 5 options (A-E).
+- All options must be plausible and clinically relevant — no obviously wrong answers.
+- Options should be parallel in structure (e.g., all drugs, all mechanisms, all diagnoses).
+- Keep each option to one short phrase or sentence.
+
+EXPLANATION:
+- 3-5 sentences.
+- First sentence: state why the correct answer is right.
+- Remaining sentences: briefly explain why each wrong answer is incorrect.
+
+Return ONLY valid JSON. If count is 1, return one JSON object. If count > 1, return a JSON array. Each object must have: {"stem":"...","options":["...","...","...","...","..."],"answerIndex":0,"explanation":"..."}. No markdown, no code fences, no extra text before or after the JSON.`;
 
     const body = {
       contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { temperature: 0.4, topP: 0.9, maxOutputTokens: 3000 }
+      generationConfig: { temperature: 0.4, topP: 0.9, maxOutputTokens: 4000 }
     };
 
     try {
