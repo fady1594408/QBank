@@ -182,7 +182,7 @@
   const LS_KEY  = 'step1_qbank_v5';
   const LS_API  = 'step1_api_key_v3';
   const TEXT_API = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
-  const IMG_API  = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-preview-image-generation:generateContent';
+  const IMG_API  = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image-preview:generateContent';
 
   let QUESTIONS = [];
   let deck = [];
@@ -305,7 +305,7 @@
   async function fetchAIImage(apiKey, imagePrompt){
     try{
       const body={
-        contents:[{parts:[{text:'Generate a realistic high-quality medical education image: '+imagePrompt+'. Style: clinical pathology textbook quality, clear and detailed, suitable for medical students studying for USMLE Step 1.'}]}],
+        contents:[{parts:[{text:'Generate a realistic high-quality medical education image: '+imagePrompt+'. Style: clinical pathology textbook quality, clear and detailed, suitable for medical students studying for USMLE Step 1. Do NOT add any text labels or watermarks on the image.'}]}],
         generationConfig:{ responseModalities:['TEXT','IMAGE'] }
       };
       const res=await fetch(IMG_API+'?key='+encodeURIComponent(apiKey),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
@@ -313,7 +313,28 @@
       const data=await res.json();
       const parts=data?.candidates?.[0]?.content?.parts||[];
       for(const p of parts){ if(p.inlineData?.data) return p.inlineData.data; }
-    }catch(e){ console.warn('Image gen error:',e); }
+    }catch(e){ console.warn('Image gen error:',e.message||e); }
+    return '';
+  }
+
+  async function fetchAIImageWithFallback(apiKey, imagePrompt){
+    // Try primary model first, fall back to gemini-2.5-flash-image
+    const result = await fetchAIImage(apiKey, imagePrompt);
+    if(result) return result;
+    // Fallback: try gemini-2.5-flash-image
+    try{
+      const fallbackUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent';
+      const body={
+        contents:[{parts:[{text:'Generate a realistic high-quality medical education image: '+imagePrompt+'. Style: clinical pathology textbook quality, clear and detailed.'}]}],
+        generationConfig:{ responseModalities:['TEXT','IMAGE'] }
+      };
+      const res=await fetch(fallbackUrl+'?key='+encodeURIComponent(apiKey),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+      if(!res.ok){ console.warn('Fallback image gen failed:',res.status, await res.text()); return ''; }
+      const data=await res.json();
+      const parts=data?.candidates?.[0]?.content?.parts||[];
+      for(const p of parts){ if(p.inlineData?.data) return p.inlineData.data; }
+      console.warn('Fallback image gen: no inlineData in response', JSON.stringify(data).slice(0,300));
+    }catch(e){ console.warn('Fallback image gen error:',e.message||e); }
     return '';
   }
 
@@ -370,7 +391,7 @@ Return ONLY valid JSON. If count=1 return one object. If count>1 return a JSON a
         let imageData='';
         if(obj.imagePrompt){
           setStatus('Generating image for: '+obj.imagePrompt.slice(0,70)+'...');
-          imageData=await fetchAIImage(apiKey, obj.imagePrompt);
+          imageData=await fetchAIImageWithFallback(apiKey, obj.imagePrompt);
         }
         const idx=QUESTIONS.length;
         QUESTIONS.push({ id:idx+1, system, discipline:'Mixed', difficulty, stem:obj.stem, options:obj.options, answerIndex:obj.answerIndex, explanation:obj.explanation||'', imageData });
