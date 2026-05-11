@@ -5,66 +5,220 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Step 1 AI QBank</title>
 <style>
-  :root{--bg:#f7f7f5;--card:#fff;--muted:#667085;--text:#101828;--line:#d0d5dd;--primary:#0f766e;--primary2:#115e59;--good:#166534;--bad:#9d174d}
-  *{box-sizing:border-box}
-  body{margin:0;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--text)}
-  .wrap{max-width:1200px;margin:0 auto;padding:24px}
-  .top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:18px}
-  h1{margin:0;font-size:34px}
-  .sub{margin-top:6px;color:var(--muted)}
-  .grid{display:grid;grid-template-columns:2fr 1fr;gap:18px}
-  @media(max-width:980px){.grid{grid-template-columns:1fr}}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 20px;box-shadow:0 1px 2px rgba(16,24,40,.04)}
-  .pill{display:inline-block;padding:6px 10px;border-radius:999px;background:#eef2f7;color:#344054;font-size:12px;margin:0 6px 8px 0}
-  .controlrow{display:flex;gap:10px;flex-wrap:wrap;align-items:end;margin:12px 0 8px}
-  label{font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:4px}
-  input,select{padding:8px 10px;border:1px solid var(--line);border-radius:10px;font-size:14px;background:#fff}
-  input[type=text],input[type=password]{min-width:200px}
-  .btn{border:none;border-radius:999px;padding:10px 18px;font-size:14px;cursor:pointer;font-family:inherit}
-  .primary{background:var(--primary);color:#fff}
-  .primary:hover:not(:disabled){background:var(--primary2)}
-  .primary:disabled{opacity:.6;cursor:not-allowed}
-  .secondary{background:#f2f4f7;color:#101828;border:1px solid var(--line)}
-  .secondary:hover:not(:disabled){background:#e5e7eb}
-  .danger{background:#fff1f2;color:var(--bad);border:1px solid #fecdd3}
-  .danger:hover{background:#ffe4e6}
-  .choice{display:flex;gap:12px;align-items:flex-start;width:100%;text-align:left;padding:12px 14px;margin:8px 0;border:1px solid var(--line);border-radius:12px;background:#fafafa;cursor:pointer;font-size:15px;font-family:inherit}
-  .choice:hover{background:#f3f4f6}
-  .choice.selected{border-color:var(--primary);background:#ecfeff}
-  .choice.correct{border-color:var(--good);background:#f0fdf4}
-  .choice.wrong{border-color:var(--bad);background:#fdf2f8}
-  .letter{min-width:30px;height:30px;border-radius:999px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-weight:600;background:#fff;font-size:14px;flex-shrink:0}
-  #stem{margin:10px 0 10px;font-size:16px;line-height:1.6}
-  .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
-  .statbox{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px}
-  .stat{border:1px solid var(--line);border-radius:12px;padding:12px}
-  .stat .label{color:var(--muted);font-size:13px}
-  .stat .value{font-size:26px;font-weight:700;margin-top:4px}
-  .section{font-size:13px;color:var(--muted);margin:12px 0 6px}
+  :root{
+    --uw-navy:#1a3a5c;
+    --uw-blue:#2563a8;
+    --uw-blue-light:#e8f0fb;
+    --uw-green:#1a7a3c;
+    --uw-green-bg:#eaf6ee;
+    --uw-red:#c0392b;
+    --uw-red-bg:#fdf0ee;
+    --uw-border:#c8d6e5;
+    --uw-bg:#f0f4f8;
+    --uw-white:#ffffff;
+    --uw-text:#1a1a1a;
+    --uw-muted:#5a6a7a;
+    --uw-toolbar-h:52px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:"Segoe UI",system-ui,-apple-system,sans-serif;background:var(--uw-bg);color:var(--uw-text);font-size:15px;min-height:100vh}
+
+  /* ── TOP TOOLBAR ── */
+  #toolbar{
+    position:sticky;top:0;z-index:100;
+    background:var(--uw-navy);
+    height:var(--uw-toolbar-h);
+    display:flex;align-items:center;justify-content:space-between;
+    padding:0 16px;gap:8px;
+    box-shadow:0 2px 6px rgba(0,0,0,.3);
+  }
+  #toolbar .tb-left{display:flex;align-items:center;gap:14px;color:#fff;font-size:13px;min-width:160px}
+  #toolbar .tb-left .item-count{font-weight:700;font-size:14px}
+  #toolbar .tb-left .item-id{color:#a8c4e0;font-size:12px}
+  #toolbar .tb-center{display:flex;align-items:center;gap:6px}
+  #toolbar .tb-right{display:flex;align-items:center;gap:6px;min-width:160px;justify-content:flex-end}
+  .tb-btn{
+    background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);
+    color:#fff;border-radius:6px;padding:5px 12px;font-size:12px;cursor:pointer;
+    display:flex;align-items:center;gap:5px;white-space:nowrap;font-family:inherit;
+    transition:background .15s;
+  }
+  .tb-btn:hover{background:rgba(255,255,255,.22)}
+  .tb-btn.nav{padding:5px 14px;font-size:13px;font-weight:600}
+  .tb-btn svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2}
+  #toolbar .end-btn{background:#c0392b;border-color:#a93226;font-weight:700;padding:5px 14px}
+  #toolbar .end-btn:hover{background:#a93226}
+
+  /* ── API KEY STRIP ── */
+  #apiStrip{
+    background:var(--uw-blue);
+    padding:8px 20px;
+    display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+    font-size:13px;color:#fff;
+  }
+  #apiStrip input{
+    padding:5px 10px;border-radius:5px;border:none;font-size:13px;
+    width:280px;background:rgba(255,255,255,.15);color:#fff;
+  }
+  #apiStrip input::placeholder{color:rgba(255,255,255,.6)}
+  #apiStrip input:focus{outline:none;background:rgba(255,255,255,.25)}
+  #apiStrip .strip-btn{
+    background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.35);
+    color:#fff;border-radius:5px;padding:5px 12px;font-size:12px;cursor:pointer;font-family:inherit;
+  }
+  #apiStrip .strip-btn:hover{background:rgba(255,255,255,.3)}
+  #keyHint{font-size:12px;color:rgba(255,255,255,.75)}
+
+  /* ── MAIN LAYOUT ── */
+  #main{display:flex;height:calc(100vh - var(--uw-toolbar-h))}
+  #questionPane{flex:1;overflow-y:auto;display:flex;flex-direction:column;min-width:0}
+  #rightPane{
+    width:300px;flex-shrink:0;overflow-y:auto;
+    border-left:1px solid var(--uw-border);
+    background:var(--uw-white);
+  }
+
+  /* ── QUESTION AREA ── */
+  #questionArea{
+    background:var(--uw-white);
+    padding:24px 32px 18px;
+    border-bottom:1px solid var(--uw-border);
+    flex-shrink:0;
+  }
+  #qMeta{display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+  .q-pill{
+    font-size:11px;padding:3px 10px;border-radius:999px;
+    background:var(--uw-blue-light);color:var(--uw-blue);border:1px solid #b8d0f0;
+    font-weight:500;
+  }
+  #imageBox{display:none;margin-bottom:14px}
+  #imageBox img{max-width:100%;max-height:320px;border-radius:6px;border:1px solid var(--uw-border);cursor:zoom-in;display:block}
+  #stem{font-size:16px;line-height:1.7;color:var(--uw-text)}
+
+  /* ── ANSWER CHOICES ── */
+  #answersArea{
+    background:var(--uw-white);
+    padding:0 32px 20px;
+  }
+  #choicesWrap{
+    border:1px solid var(--uw-border);border-radius:6px;overflow:hidden;margin-top:16px;
+  }
+  .choice{
+    display:flex;align-items:center;gap:12px;
+    padding:11px 16px;border-bottom:1px solid var(--uw-border);
+    cursor:pointer;background:var(--uw-white);font-size:15px;
+    transition:background .1s;width:100%;text-align:left;border-left:none;border-right:none;border-top:none;font-family:inherit;color:var(--uw-text);
+  }
+  .choice:last-child{border-bottom:none}
+  .choice:hover:not(:disabled){background:#f4f8fd}
+  .choice.selected{background:var(--uw-blue-light)}
+  .choice.correct{background:var(--uw-green-bg)}
+  .choice.wrong{background:var(--uw-red-bg)}
+  .choice:disabled{cursor:default}
+  .choice-radio{
+    width:18px;height:18px;border-radius:50%;border:2px solid #9ab0c8;
+    flex-shrink:0;display:flex;align-items:center;justify-content:center;background:#fff;
+  }
+  .choice.selected .choice-radio{border-color:var(--uw-blue);background:var(--uw-blue)}
+  .choice.selected .choice-radio::after{content:'';width:6px;height:6px;border-radius:50%;background:#fff;display:block}
+  .choice.correct .choice-radio{border-color:var(--uw-green);background:var(--uw-green)}
+  .choice.correct .choice-radio::after{content:'✓';color:#fff;font-size:11px;font-weight:700;line-height:1}
+  .choice.wrong .choice-radio{border-color:var(--uw-red);background:var(--uw-red)}
+  .choice.wrong .choice-radio::after{content:'✗';color:#fff;font-size:11px;font-weight:700;line-height:1}
+  .choice-letter{font-weight:700;color:var(--uw-muted);font-size:14px;min-width:16px}
+  .choice-text{flex:1}
+  .choice-pct{font-size:12px;color:var(--uw-muted);margin-left:8px;white-space:nowrap}
+
+  /* ── SUBMIT / NAV BUTTONS ── */
+  #actionBar{
+    padding:14px 32px;background:var(--uw-white);border-top:1px solid var(--uw-border);
+    display:flex;gap:10px;flex-wrap:wrap;align-items:center;
+  }
+  .uw-btn{
+    border:none;border-radius:5px;padding:9px 22px;font-size:14px;
+    cursor:pointer;font-family:inherit;font-weight:600;transition:background .15s;
+  }
+  .uw-btn.primary{background:var(--uw-blue);color:#fff}
+  .uw-btn.primary:hover:not(:disabled){background:#1d4f8a}
+  .uw-btn.primary:disabled{opacity:.5;cursor:not-allowed}
+  .uw-btn.outline{background:#fff;color:var(--uw-blue);border:2px solid var(--uw-blue)}
+  .uw-btn.outline:hover:not(:disabled){background:var(--uw-blue-light)}
+  .uw-btn.outline:disabled{opacity:.5;cursor:not-allowed}
+  .uw-btn.ghost{background:#f0f4f8;color:var(--uw-muted);border:1px solid var(--uw-border)}
+  .uw-btn.ghost:hover{background:#e2e8f0}
+  .uw-btn.danger-btn{background:#fff0ee;color:var(--uw-red);border:1px solid #f4c0ba}
+  .uw-btn.danger-btn:hover{background:#ffe0dc}
+
+  /* ── RESULT BAR ── */
+  #resultBar{
+    display:none;
+    padding:14px 32px;align-items:center;gap:32px;flex-wrap:wrap;
+    border-top:3px solid var(--uw-green);background:var(--uw-green-bg);
+  }
+  #resultBar.wrong-bar{border-top-color:var(--uw-red);background:var(--uw-red-bg)}
+  #resultLabel{font-size:16px;font-weight:700;color:var(--uw-green)}
+  #resultBar.wrong-bar #resultLabel{color:var(--uw-red)}
+  .result-stat{text-align:center}
+  .result-stat .rs-val{font-size:15px;font-weight:600;color:var(--uw-text)}
+  .result-stat .rs-lbl{font-size:11px;color:var(--uw-muted);margin-top:2px}
+
+  /* ── EXPLANATION ── */
+  #explanationBox{
+    padding:20px 32px 28px;background:var(--uw-white);
+    border-top:1px solid var(--uw-border);
+  }
+  #explanationBox h3{font-size:14px;font-weight:700;color:var(--uw-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px}
+  #explanation{font-size:15px;line-height:1.7;color:var(--uw-text)}
+
+  /* ── STATUS BAR ── */
+  #status{
+    padding:8px 32px;font-size:12px;color:var(--uw-muted);
+    background:var(--uw-bg);border-bottom:1px solid var(--uw-border);
+  }
+  #status.ok{color:var(--uw-green);background:#eaf6ee}
+  #status.err{color:var(--uw-red);background:#fdf0ee}
+
+  /* ── RIGHT PANEL ── */
+  #rightPane .rp-section{padding:18px 16px;border-bottom:1px solid var(--uw-border)}
+  #rightPane .rp-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--uw-muted);margin-bottom:12px}
+  .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .stat-box{border:1px solid var(--uw-border);border-radius:6px;padding:10px;text-align:center}
+  .stat-box .sv{font-size:22px;font-weight:700;color:var(--uw-navy)}
+  .stat-box .sl{font-size:11px;color:var(--uw-muted);margin-top:2px}
   .chips{display:flex;gap:6px;flex-wrap:wrap}
-  .chip{border:1px solid var(--line);border-radius:999px;padding:6px 10px;background:#f9fafb;cursor:pointer;font-size:13px}
-  .chip.active{background:var(--primary);color:#fff;border-color:var(--primary)}
-  #feedback{margin-top:12px;font-weight:700;font-size:15px}
-  #feedback.good{color:var(--good)}
-  #feedback.bad{color:var(--bad)}
-  #explanationBox{margin-top:12px;padding-top:10px;border-top:1px solid var(--line);font-size:14px;line-height:1.55}
-  #status{margin:10px 0;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:#f9fafb;color:var(--muted);font-size:13px;white-space:pre-wrap;word-break:break-word}
-  #status.ok{border-color:#86efac;background:#f0fdf4;color:var(--good)}
-  #status.err{border-color:#f9a8d4;background:#fff1f2;color:var(--bad)}
-  .note{margin-top:10px;color:var(--muted);font-size:13px;line-height:1.5}
-  .small{font-size:12px;color:var(--muted)}
-  .topkey{max-width:360px}
-  /* Image area */
-  #imageBox{margin:0 0 10px;display:none}
-  #imageBox img{max-width:100%;max-height:340px;border-radius:10px;border:1px solid var(--line);display:block;cursor:zoom-in}
-  /* Image modal */
-  #imgModal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:999;align-items:center;justify-content:center}
+  .chip{border:1px solid var(--uw-border);border-radius:999px;padding:4px 10px;background:#f8fafc;cursor:pointer;font-size:12px;color:var(--uw-muted)}
+  .chip.active{background:var(--uw-blue);color:#fff;border-color:var(--uw-blue)}
+
+  /* ── GENERATE PANEL (right pane) ── */
+  #genPanel label{font-size:12px;color:var(--uw-muted);display:flex;flex-direction:column;gap:3px;margin-bottom:8px}
+  #genPanel select,#genPanel input[type=text]{
+    padding:6px 9px;border:1px solid var(--uw-border);border-radius:5px;
+    font-size:13px;background:#fff;width:100%;color:var(--uw-text)
+  }
+  #genPanel .gen-row{display:flex;align-items:center;gap:6px;margin-bottom:8px;font-size:13px}
+  #genPanel .gen-row input[type=checkbox]{width:15px;height:15px;cursor:pointer}
+
+  /* ── API KEY inside right pane ── */
+  #keyPanel label{font-size:12px;color:var(--uw-muted);display:flex;flex-direction:column;gap:3px;margin-bottom:8px}
+  #keyPanel input{padding:6px 9px;border:1px solid var(--uw-border);border-radius:5px;font-size:13px;background:#fff;width:100%}
+  #keyPanel .key-hint{font-size:11px;color:var(--uw-muted);margin-top:4px}
+
+  /* ── MODAL ── */
+  #imgModal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:999;align-items:center;justify-content:center}
   #imgModal.open{display:flex}
-  #imgModal img{max-width:90vw;max-height:90vh;border-radius:12px;box-shadow:0 8px 40px rgba(0,0,0,.5)}
-  #imgModal button{position:absolute;top:16px;right:20px;background:#fff;border:none;border-radius:999px;padding:6px 14px;cursor:pointer;font-size:16px;font-weight:700}
-  /* Session mode banner */
-  #modeBanner{display:none;padding:8px 14px;border-radius:10px;background:#fef9c3;border:1px solid #fde047;font-size:13px;color:#713f12;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
-  #modeBanner button{font-size:12px;padding:4px 10px;border-radius:999px;border:1px solid #fde047;background:#fff;cursor:pointer;color:#713f12}
+  #imgModal img{max-width:90vw;max-height:90vh;border-radius:8px}
+  #imgModal button{position:absolute;top:16px;right:20px;background:#fff;border:none;border-radius:5px;padding:6px 14px;cursor:pointer;font-size:15px;font-weight:700}
+
+  /* ── SESSION BANNER ── */
+  #modeBanner{display:none;padding:7px 14px;background:#fef9c3;border:1px solid #fde047;border-radius:5px;font-size:12px;color:#713f12;margin-bottom:10px;justify-content:space-between;align-items:center}
+  #modeBanner button{font-size:11px;padding:3px 10px;border-radius:999px;border:1px solid #fde047;background:#fff;cursor:pointer;color:#713f12}
+
+  .note-text{font-size:12px;color:var(--uw-muted);line-height:1.5;margin-top:6px}
+
+  @media(max-width:800px){
+    #rightPane{display:none}
+    #questionArea,#answersArea,#actionBar,#resultBar,#explanationBox{padding-left:16px;padding-right:16px}
+  }
 </style>
 </head>
 <body>
@@ -75,121 +229,164 @@
   <img id="modalImg" src="" alt="Zoomed image">
 </div>
 
-<div class="wrap">
-  <!-- Header -->
-  <div class="top">
-    <div>
-      <h1>Step 1 AI QBank</h1>
-      <div class="sub">Original USMLE-style vignette questions generated by Google Gemini 2.5 Flash. Questions include high-yield images where relevant.</div>
-    </div>
-    <div class="card topkey">
-      <div style="font-weight:600;font-size:13px;color:var(--muted)">Gemini API key</div>
-      <div class="small" style="margin-top:4px">Get a free key at <strong>aistudio.google.com</strong>. Stored only in your browser.</div>
-      <input id="apiKeyInput" type="password" placeholder="Paste Gemini API key" style="width:100%;margin-top:8px">
-      <div class="actions" style="margin-top:10px">
-        <button class="btn secondary" id="saveKeyBtn" type="button">Save key</button>
-        <button class="btn secondary" id="clearKeyBtn" type="button">Clear key</button>
-      </div>
-      <div id="keyHint" class="small" style="margin-top:6px"></div>
-    </div>
+<!-- TOP TOOLBAR -->
+<div id="toolbar">
+  <div class="tb-left">
+    <span id="itemCounter" class="item-count">Item — of —</span>
+    <span id="itemId" class="item-id"></span>
   </div>
+  <div class="tb-center">
+    <button class="tb-btn nav" id="prevBtn" type="button">&#9664; Previous</button>
+    <button class="tb-btn nav" id="nextBtnTop" type="button">Next &#9654;</button>
+  </div>
+  <div class="tb-right">
+    <button class="tb-btn" id="resetBtn" type="button">↺ Reset</button>
+    <button class="tb-btn end-btn" id="clearAllBtn" type="button">End Block</button>
+  </div>
+</div>
 
-  <div id="status">Ready. Paste your API key, click Save key, then generate questions.</div>
+<!-- MAIN SPLIT LAYOUT -->
+<div id="main">
 
-  <div class="grid">
-    <!-- Left: question panel -->
-    <div class="card">
-      <div style="margin-bottom:4px">
-        <span class="pill" id="qid">Question —</span>
-        <span class="pill" id="tag1"></span>
-        <span class="pill" id="tag2"></span>
-        <span class="pill" id="tag3"></span>
-        <span class="pill" id="sessionPill" style="display:none;background:#fef9c3;color:#713f12"></span>
+  <!-- LEFT: QUESTION PANE -->
+  <div id="questionPane">
+
+    <!-- Status bar -->
+    <div id="status">Ready. Add your Gemini API key in the panel on the right, then generate questions.</div>
+
+    <!-- Session banner -->
+    <div id="modeBanner">
+      <span id="modeBannerText"></span>
+      <button type="button" onclick="exitSessionMode()">Exit focused session</button>
+    </div>
+
+    <!-- Question stem -->
+    <div id="questionArea">
+      <div id="qMeta">
+        <span class="q-pill" id="qid">Question —</span>
+        <span class="q-pill" id="tag1" style="display:none"></span>
+        <span class="q-pill" id="tag2" style="display:none"></span>
+        <span class="q-pill" id="tag3" style="display:none"></span>
+        <span class="q-pill" id="sessionPill" style="display:none;background:#fef9c3;color:#713f12;border-color:#fde047"></span>
       </div>
-
-      <!-- Session mode banner -->
-      <div id="modeBanner">
-        <span id="modeBannerText"></span>
-        <button type="button" onclick="exitSessionMode()">Exit focused session</button>
-      </div>
-
-      <!-- Generate controls -->
-      <div class="controlrow">
-        <label>System
-          <select id="systemSelect">
-            <option>Cardiovascular</option><option>Respiratory</option><option>Renal</option>
-            <option>Gastrointestinal</option><option>Endocrine</option><option>Neurology</option>
-            <option>Hematology/Oncology</option><option>Rheumatology/MSK</option>
-            <option>Microbiology/Infectious disease</option><option>Immunology</option>
-            <option>Biochemistry/Metabolism</option><option>Behavioral sciences</option>
-            <option>Reproductive/OB-GYN</option>
-          </select>
-        </label>
-        <label>Difficulty
-          <select id="difficultySelect"><option>Basic</option><option selected>Intermediate</option><option>Advanced</option></select>
-        </label>
-        <label>Focus topic (optional)
-          <input id="topicInput" type="text" placeholder="e.g. RAAS, DiGeorge, SLE">
-        </label>
-        <label>Questions to generate
-          <select id="countSelect">
-            <option value="1">1 question</option>
-            <option value="3">3 questions</option>
-            <option value="5" selected>5 questions</option>
-            <option value="10">10 questions</option>
-          </select>
-        </label>
-        <label style="flex-direction:row;align-items:center;gap:6px;padding-top:18px">
-          <input type="checkbox" id="focusModeCheck" style="min-width:auto;width:16px;height:16px">
-          <span>Start focused session with new questions</span>
-        </label>
-        <button class="btn primary" id="generateBtn" type="button">Generate questions</button>
-      </div>
-
-      <!-- Image area -->
       <div id="imageBox">
         <img id="questionImage" src="" alt="Clinical image" onclick="openModal(this.src)">
       </div>
+      <div id="stem">Generate questions using the panel on the right to begin your session.</div>
+    </div>
 
-      <div id="stem">Click Generate questions to create new USMLE-style vignettes.</div>
-      <div id="choices"></div>
-
-      <div class="actions">
-        <button class="btn primary" id="submitBtn" type="button" disabled>Submit answer</button>
-        <button class="btn secondary" id="nextBtn" type="button" disabled>Next question</button>
-        <button class="btn secondary" id="resetBtn" type="button">Reset session stats</button>
-        <button class="btn danger" id="clearAllBtn" type="button">Clear all saved questions</button>
-      </div>
-
-      <div id="feedback"></div>
-      <div id="explanationBox">
-        <strong>Explanation</strong>
-        <div id="explanation" style="margin-top:6px;color:var(--muted)">No question loaded yet.</div>
+    <!-- Answer choices -->
+    <div id="answersArea">
+      <div id="choicesWrap">
+        <div id="choices"></div>
       </div>
     </div>
 
-    <!-- Right: stats -->
-    <div class="card">
-      <h2 style="margin-top:0;font-size:20px">Session overview</h2>
-      <div class="statbox">
-        <div class="stat"><div class="label">Attempted</div><div class="value" id="attempted">0</div></div>
-        <div class="stat"><div class="label">Correct</div><div class="value" id="correct">0</div></div>
-        <div class="stat"><div class="label">Accuracy</div><div class="value" id="accuracy">0%</div></div>
-        <div class="stat"><div class="label">Saved questions</div><div class="value" id="savedCount">0</div></div>
-      </div>
+    <!-- Action buttons -->
+    <div id="actionBar">
+      <button class="uw-btn primary" id="submitBtn" type="button" disabled>Submit Answer</button>
+      <button class="uw-btn outline" id="nextBtn" type="button" disabled>Next Question</button>
+    </div>
 
-      <div class="section">Filter by system</div>
+    <!-- Result bar -->
+    <div id="resultBar">
+      <div id="resultLabel">Correct</div>
+      <div class="result-stat"><div class="rs-val" id="res-pct">—</div><div class="rs-lbl">Answered correctly</div></div>
+      <div class="result-stat"><div class="rs-val" id="res-version">—</div><div class="rs-lbl">Version</div></div>
+    </div>
+
+    <!-- Explanation -->
+    <div id="explanationBox">
+      <h3>Explanation</h3>
+      <div id="explanation" style="color:var(--uw-muted)">No question loaded yet.</div>
+    </div>
+
+  </div><!-- /questionPane -->
+
+  <!-- RIGHT: SIDEBAR -->
+  <div id="rightPane">
+
+    <!-- API Key -->
+    <div class="rp-section" id="keyPanel">
+      <div class="rp-title">Gemini API Key</div>
+      <label>API Key
+        <input id="apiKeyInput" type="password" placeholder="Paste key from aistudio.google.com">
+      </label>
+      <div style="display:flex;gap:6px">
+        <button class="uw-btn ghost" style="font-size:12px;padding:6px 12px" id="saveKeyBtn" type="button">Save</button>
+        <button class="uw-btn ghost" style="font-size:12px;padding:6px 12px" id="clearKeyBtn" type="button">Clear</button>
+      </div>
+      <div id="keyHint" class="key-hint" style="margin-top:6px"></div>
+    </div>
+
+    <!-- Generate -->
+    <div class="rp-section" id="genPanel">
+      <div class="rp-title">Generate Questions</div>
+      <label>System
+        <select id="systemSelect">
+          <option>Cardiovascular</option><option>Respiratory</option><option>Renal</option>
+          <option>Gastrointestinal</option><option>Endocrine</option><option>Neurology</option>
+          <option>Hematology/Oncology</option><option>Rheumatology/MSK</option>
+          <option>Microbiology/Infectious disease</option><option>Immunology</option>
+          <option>Biochemistry/Metabolism</option><option>Behavioral sciences</option>
+          <option>Reproductive/OB-GYN</option>
+        </select>
+      </label>
+      <label>Difficulty
+        <select id="difficultySelect"><option>Basic</option><option selected>Intermediate</option><option>Advanced</option></select>
+      </label>
+      <label>Focus topic (optional)
+        <input id="topicInput" type="text" placeholder="e.g. RAAS, DiGeorge, SLE">
+      </label>
+      <label>Questions to generate
+        <select id="countSelect">
+          <option value="1">1 question</option>
+          <option value="3">3 questions</option>
+          <option value="5" selected>5 questions</option>
+          <option value="10">10 questions</option>
+        </select>
+      </label>
+      <div class="gen-row">
+        <input type="checkbox" id="focusModeCheck">
+        <span style="font-size:12px;color:var(--uw-muted)">Focused session (new questions only)</span>
+      </div>
+      <button class="uw-btn primary" id="generateBtn" type="button" style="width:100%;margin-top:4px">Generate Questions</button>
+    </div>
+
+    <!-- Session Stats -->
+    <div class="rp-section">
+      <div class="rp-title">Session Overview</div>
+      <div class="stat-grid">
+        <div class="stat-box"><div class="sv" id="attempted">0</div><div class="sl">Attempted</div></div>
+        <div class="stat-box"><div class="sv" id="correct">0</div><div class="sl">Correct</div></div>
+        <div class="stat-box"><div class="sv" id="accuracy">0%</div><div class="sl">Accuracy</div></div>
+        <div class="stat-box"><div class="sv" id="savedCount">0</div><div class="sl">Saved Qs</div></div>
+      </div>
+    </div>
+
+    <!-- Filter by system -->
+    <div class="rp-section">
+      <div class="rp-title">Filter by System</div>
       <div class="chips" id="systemChips"></div>
-
-      <div class="section">Filter by difficulty</div>
-      <div class="chips" id="difficultyChips"></div>
-
-      <div class="note"><strong>Focused session:</strong> Check "Start focused session" before generating to practice only the questions you just created, without mixing in older ones.</div>
-      <div class="note"><strong>Images:</strong> When the AI detects a high-yield image opportunity (e.g., histology, ECG, rash), it will include a search-based image from Wikimedia Commons or similar open educational sources.</div>
-      <div class="note">Free tier: ~10 req/min, 250/day on Gemini 2.5 Flash. If you hit a 429 error, wait a minute and try again.</div>
     </div>
-  </div>
-</div>
+
+    <!-- Filter by difficulty -->
+    <div class="rp-section">
+      <div class="rp-title">Filter by Difficulty</div>
+      <div class="chips" id="difficultyChips"></div>
+    </div>
+
+    <!-- Notes -->
+    <div class="rp-section">
+      <div class="rp-title">Notes</div>
+      <p class="note-text"><strong>Focused session:</strong> Check the box before generating to practice only new questions.</p>
+      <p class="note-text" style="margin-top:6px"><strong>Images:</strong> High-yield visuals (histology, ECG, rash) are auto-included when relevant.</p>
+      <p class="note-text" style="margin-top:6px">Free tier: ~10 req/min, 250/day. If you see a 429 error, wait a minute.</p>
+    </div>
+
+  </div><!-- /rightPane -->
+
+</div><!-- /main -->
 
 <script>
 (() => {
@@ -297,12 +494,17 @@
     }
     selected=null; submitted=false;
     const q=QUESTIONS[deck[current]];
-    $('qid').textContent='Question '+q.id;
-    $('tag1').textContent=q.system||''; $('tag2').textContent=q.discipline||''; $('tag3').textContent=q.difficulty||'';
+    $('qid').textContent='Q '+q.id;
+    const t1=$('tag1'); const t2=$('tag2'); const t3=$('tag3');
+    if(q.system){t1.textContent=q.system;t1.style.display='inline-block';}else{t1.style.display='none';}
+    if(q.discipline){t2.textContent=q.discipline;t2.style.display='inline-block';}else{t2.style.display='none';}
+    if(q.difficulty){t3.textContent=q.difficulty;t3.style.display='inline-block';}else{t3.style.display='none';}
     $('stem').textContent=q.stem||'';
     $('choices').innerHTML='';
-    $('feedback').textContent=''; $('feedback').className='';
     $('explanation').textContent='Select an answer and press Submit.';
+    // Update toolbar counter
+    $('itemCounter').textContent='Item '+(current+1)+' of '+deck.length;
+    $('itemId').textContent='Q #'+q.id;
 
     // Handle image
     const imgSrc = findImage(q);
@@ -314,19 +516,23 @@
     const letters=['A','B','C','D','E'];
     (q.options||[]).forEach((opt,idx)=>{
       const btn=document.createElement('button'); btn.type='button'; btn.className='choice';
-      const ltr=document.createElement('div'); ltr.className='letter'; ltr.textContent=letters[idx];
-      const txt=document.createElement('div'); txt.textContent=String(opt);
-      btn.append(ltr,txt);
+      const radio=document.createElement('div'); radio.className='choice-radio';
+      const ltr=document.createElement('div'); ltr.className='choice-letter'; ltr.textContent=letters[idx]+'.';
+      const txt=document.createElement('div'); txt.className='choice-text'; txt.textContent=String(opt);
+      btn.append(radio,ltr,txt);
       btn.onclick=()=>{
         if(submitted)return;
         selected=idx;
-        Array.from($('choices').children).forEach(n=>n.className='choice');
+        Array.from($('choices').children).forEach(n=>{ n.className='choice'; });
         btn.className='choice selected';
       };
       $('choices').appendChild(btn);
     });
     $('submitBtn').disabled=false;
     $('nextBtn').disabled=deck.length<=1;
+    // Hide result bar on new question
+    $('resultBar').style.display='none';
+    $('resultBar').className='';
   }
 
   function parseJSON(raw){
@@ -441,10 +647,21 @@ CRITICAL OUTPUT RULES: Return ONLY raw JSON with zero extra text. If count=1 ret
     if(submitted)return;
     submitted=true; attempted++;
     const q=QUESTIONS[deck[current]];
-    Array.from($('choices').children).forEach((n,idx)=>{ if(idx===q.answerIndex)n.classList.add('correct'); else if(idx===selected)n.classList.add('wrong'); });
-    if(selected===q.answerIndex){ correct++; $('feedback').textContent='Correct!'; $('feedback').className='good'; }
-    else{ $('feedback').textContent='Incorrect. Correct answer: '+['A','B','C','D','E'][q.answerIndex]; $('feedback').className='bad'; }
+    Array.from($('choices').children).forEach((n,idx)=>{
+      n.disabled=true;
+      if(idx===q.answerIndex) n.classList.add('correct');
+      else if(idx===selected) n.classList.add('wrong');
+    });
+    const isCorrect=(selected===q.answerIndex);
+    if(isCorrect) correct++;
     $('explanation').textContent=q.explanation||'';
+    // Show UWorld-style result bar
+    const rb=$('resultBar');
+    rb.style.display='flex';
+    if(isCorrect){ rb.className=''; $('resultLabel').textContent='Correct'; }
+    else{ rb.className='wrong-bar'; $('resultLabel').textContent='Incorrect — '+['A','B','C','D','E'][q.answerIndex]+' is correct'; }
+    $('res-pct').textContent='—';
+    $('res-version').textContent='AI';
     updateStats();
   }
 
@@ -460,6 +677,8 @@ CRITICAL OUTPUT RULES: Return ONLY raw JSON with zero extra text. If count=1 ret
     $('generateBtn').onclick=generateQuestions;
     $('submitBtn').onclick=handleSubmit;
     $('nextBtn').onclick=()=>{ if(deck.length){current=(current+1)%deck.length;renderQuestion();} };
+    $('nextBtnTop').onclick=()=>{ if(deck.length){current=(current+1)%deck.length;renderQuestion();} };
+    $('prevBtn').onclick=()=>{ if(deck.length){current=(current-1+deck.length)%deck.length;renderQuestion();} };
     $('resetBtn').onclick=()=>{ attempted=0;correct=0;updateStats();renderQuestion();setStatus('Stats reset.','ok'); };
     $('clearAllBtn').onclick=()=>{
       if(!confirm('Delete all '+QUESTIONS.length+' saved questions? This cannot be undone.'))return;
