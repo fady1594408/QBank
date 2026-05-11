@@ -175,7 +175,6 @@
   #stem{user-select:text}
   .hl-yellow{background:#ffeb3b;padding:0 2px;border-radius:2px}
   .hl-green{background:#b7f7b7;padding:0 2px;border-radius:2px}
-  .hl-blue{background:#b8e1ff;padding:0 2px;border-radius:2px}
   .crossed{text-decoration:line-through;text-decoration-thickness:2px}
 
   /* ── STATUS BAR ── */
@@ -282,9 +281,7 @@
       </div>
       <div id="stem">Generate questions using the panel on the right to begin your session.</div>
       <div class="text-tool-bar">
-        <button class="text-tool-btn" id="highlightYellowBtn" type="button">Highlight yellow</button>
-        <button class="text-tool-btn" id="highlightBlueBtn" type="button">Highlight blue</button>
-        <button class="text-tool-btn" id="highlightGreenBtn" type="button">Highlight green</button>
+        <button class="text-tool-btn" id="highlightYellowBtn" type="button">Highlight</button>
         <button class="text-tool-btn" id="crossOutBtn" type="button">Cross out</button>
         <button class="text-tool-btn" id="clearMarkupBtn" type="button">Clear markup</button>
       </div>
@@ -544,6 +541,8 @@
     markupStore[markupKey()] = $('stem').innerHTML;
     saveMarkup();
   }
+
+  function bindTool(id, fn){ const el=$(id); if(el) el.onclick=fn; }
   function renderQuestion(){
     if(!deck.length){
       $('qid').textContent='Question —'; $('tag1').textContent=''; $('tag2').textContent=''; $('tag3').textContent='';
@@ -739,10 +738,8 @@ CRITICAL OUTPUT RULES: Return ONLY raw JSON with zero extra text. If count=1 ret
     $('generateBtn').onclick=generateQuestions;
     $('submitBtn').onclick=handleSubmit;
     $('highlightYellowBtn').onclick=()=>wrapSelection('hl-yellow');
-    $('highlightBlueBtn').onclick=()=>wrapSelection('hl-blue');
-    $('highlightGreenBtn').onclick=()=>wrapSelection('hl-green');
-    $('crossOutBtn').onclick=toggleCrossOut;
-    $('clearMarkupBtn').onclick=()=>{ const key=markupKey(); delete markupStore[key]; saveMarkup(); $('stem').innerHTML=QUESTIONS[deck[current]].stem||''; };
+        $('crossOutBtn').onclick=toggleCrossOut;
+    $('clearMarkupBtn').onclick=()=>{ const key=markupKey(); delete markupStore[key]; saveMarkup(); $('stem').innerHTML=(QUESTIONS[deck[current]].stem||''); };
     $('nextBtn').onclick=()=>{ if(deck.length){current=(current+1)%deck.length;renderQuestion();} };
     $('nextBtnTop').onclick=()=>{ if(deck.length){current=(current+1)%deck.length;renderQuestion();} };
     $('prevBtn').onclick=()=>{ if(deck.length){current=(current-1+deck.length)%deck.length;renderQuestion();} };
