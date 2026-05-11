@@ -169,6 +169,14 @@
   }
   #explanationBox h3{font-size:14px;font-weight:700;color:var(--uw-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px}
   #explanation{font-size:15px;line-height:1.7;color:var(--uw-text)}
+  .text-tool-bar{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 0}
+  .text-tool-btn{border:1px solid var(--uw-border);background:#fff;border-radius:5px;padding:6px 10px;font-size:12px;cursor:pointer;color:var(--uw-muted)}
+  .text-tool-btn.active{background:var(--uw-blue);color:#fff;border-color:var(--uw-blue)}
+  #stem{user-select:text}
+  .hl-yellow{background:#ffeb3b;padding:0 2px;border-radius:2px}
+  .hl-green{background:#b7f7b7;padding:0 2px;border-radius:2px}
+  .hl-blue{background:#b8e1ff;padding:0 2px;border-radius:2px}
+  .crossed{text-decoration:line-through;text-decoration-thickness:2px}
 
   /* ── STATUS BAR ── */
   #status{
@@ -273,6 +281,13 @@
         <img id="questionImage" src="" alt="Clinical image" onclick="openModal(this.src)">
       </div>
       <div id="stem">Generate questions using the panel on the right to begin your session.</div>
+      <div class="text-tool-bar">
+        <button class="text-tool-btn" id="highlightYellowBtn" type="button">Highlight yellow</button>
+        <button class="text-tool-btn" id="highlightBlueBtn" type="button">Highlight blue</button>
+        <button class="text-tool-btn" id="highlightGreenBtn" type="button">Highlight green</button>
+        <button class="text-tool-btn" id="crossOutBtn" type="button">Cross out</button>
+        <button class="text-tool-btn" id="clearMarkupBtn" type="button">Clear markup</button>
+      </div>
     </div>
 
     <!-- Answer choices -->
@@ -483,6 +498,52 @@
     $('savedCount').textContent=QUESTIONS.length;
   }
 
+  let activeMarkMode = null;
+  const markupStore = JSON.parse(localStorage.getItem(LSKEY+':markup')||'{}');
+  function markupKey(){ return 'q_'+(deck[current]??'none'); }
+  function saveMarkup(){ localStorage.setItem(LSKEY+':markup', JSON.stringify(markupStore)); }
+  function applySavedMarkup(){
+    const key=markupKey();
+    const html=markupStore[key];
+    if(html) $('stem').innerHTML=html;
+  }
+  function wrapSelection(className){
+    const sel=window.getSelection();
+    if(!sel || sel.rangeCount===0 || sel.isCollapsed) return;
+    const range=sel.getRangeAt(0);
+    const span=document.createElement('span');
+    span.className=className;
+    try{
+      range.surroundContents(span);
+    }catch(e){
+      const frag=range.extractContents();
+      span.appendChild(frag);
+      range.insertNode(span);
+    }
+    sel.removeAllRanges();
+    markupStore[markupKey()] = $('stem').innerHTML;
+    saveMarkup();
+  }
+  function toggleCrossOut(){
+    const sel=window.getSelection();
+    if(!sel || sel.rangeCount===0 || sel.isCollapsed) return;
+    const range=sel.getRangeAt(0);
+    const text=range.toString();
+    if(!text) return;
+    const node=range.commonAncestorContainer;
+    const parent=node.nodeType===3?node.parentElement:node;
+    const crossed=parent.closest('.crossed');
+    if(crossed){ crossed.classList.remove('crossed'); }
+    else{
+      const span=document.createElement('span');
+      span.className='crossed';
+      try{ range.surroundContents(span); }
+      catch(e){ const frag=range.extractContents(); span.appendChild(frag); range.insertNode(span); }
+    }
+    sel.removeAllRanges();
+    markupStore[markupKey()] = $('stem').innerHTML;
+    saveMarkup();
+  }
   function renderQuestion(){
     if(!deck.length){
       $('qid').textContent='Question —'; $('tag1').textContent=''; $('tag2').textContent=''; $('tag3').textContent='';
@@ -500,6 +561,7 @@
     if(q.discipline){t2.textContent=q.discipline;t2.style.display='inline-block';}else{t2.style.display='none';}
     if(q.difficulty){t3.textContent=q.difficulty;t3.style.display='inline-block';}else{t3.style.display='none';}
     $('stem').textContent=q.stem||'';
+    $('stem').setAttribute('contenteditable','false');
     $('choices').innerHTML='';
     $('explanation').textContent='Select an answer and press Submit.';
     // Update toolbar counter
@@ -676,6 +738,11 @@ CRITICAL OUTPUT RULES: Return ONLY raw JSON with zero extra text. If count=1 ret
     $('clearKeyBtn').onclick=()=>{ $('apiKeyInput').value=''; localStorage.removeItem(LS_API); setStatus('Key cleared.','ok'); };
     $('generateBtn').onclick=generateQuestions;
     $('submitBtn').onclick=handleSubmit;
+    $('highlightYellowBtn').onclick=()=>wrapSelection('hl-yellow');
+    $('highlightBlueBtn').onclick=()=>wrapSelection('hl-blue');
+    $('highlightGreenBtn').onclick=()=>wrapSelection('hl-green');
+    $('crossOutBtn').onclick=toggleCrossOut;
+    $('clearMarkupBtn').onclick=()=>{ const key=markupKey(); delete markupStore[key]; saveMarkup(); $('stem').innerHTML=QUESTIONS[deck[current]].stem||''; };
     $('nextBtn').onclick=()=>{ if(deck.length){current=(current+1)%deck.length;renderQuestion();} };
     $('nextBtnTop').onclick=()=>{ if(deck.length){current=(current+1)%deck.length;renderQuestion();} };
     $('prevBtn').onclick=()=>{ if(deck.length){current=(current-1+deck.length)%deck.length;renderQuestion();} };
