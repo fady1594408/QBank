@@ -58,7 +58,8 @@
   <div class="top">
     <div>
       <h1>Step 1 AI QBank</h1>
-      <div class="sub">Generate original USMLE-style questions with Gemini. If you want the most reliable version, host this page on GitHub Pages instead of opening it as a raw file.</div>
+      <div class="sub">Generate original USMLE-style questions with Gemini. This build uses the Gemini 2.0 Flash generateContent endpoint and is most reliable when hosted on GitHub Pages.</div>
+      <div class="small" style="margin-top:4px;">Best deployment: GitHub Pages. Raw local files can work unpredictably with browser storage and cross-origin requests.</div>
       <div class="small" style="margin-top:4px;">Status messages appear in the box at the top right and below the question panel.</div>
     </div>
     <div class="card topkey">
@@ -284,7 +285,7 @@
     const prompt = `You are a USMLE Step 1 question writer. Write ONE high-quality single-best-answer vignette question about ${system}. Difficulty: ${difficulty}.${topic ? ' Focus topic: ' + topic + '.' : ''} Return ONLY valid JSON with exactly this shape: {"stem":"...","options":["...","...","...","...","..."],"answerIndex":0,"explanation":"..."}. Rules: 1) Include age, sex, relevant history, physical exam, labs/imaging if useful. 2) Ask a mechanism/pathophysiology/pharmacology question. 3) Give exactly 5 clinically plausible answer choices. 4) No markdown, no backticks, no extra commentary. 5) Explanation should be concise but teaching-oriented.`;
 
     const body = { contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.35, topP: 0.9, maxOutputTokens: 900 } };
-    const endpoint = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + encodeURIComponent(apiKey);
+    const endpoint = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + encodeURIComponent(apiKey);
 
     try {
       const res = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
