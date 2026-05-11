@@ -354,18 +354,36 @@
 
     const prompt=`You are an expert USMLE Step 1 item writer trained on NBME, UWorld, and AMBOSS formatting standards. Write exactly ${count} USMLE Step 1 vignette question(s) about ${system}.${topic?' Focus subtopic: '+topic+'.':''} Difficulty: ${difficulty}.
 
-STRICT FORMAT RULES:
+STRICT OUTPUT RULES:
+Return ONLY valid JSON. If count>1 return an array of objects.
+Each object MUST have these fields:
+- stem: string
+- options: array of exactly 5 strings
+- answerIndex: integer 0-4
+- explanation: string
+- visual: boolean (true ONLY if a picture should be shown; false otherwise)
+- imagePrompt: string (ONLY if visual=true; otherwise omit)
 
-STEM (3-6 sentences total):
-- Start with patient demographics (age, sex, setting).
-- Include chief complaint, history, physical exam, and key labs/imaging.
-- The FINAL sentence of the stem MUST be a direct question ending with "?" — e.g. "Which of the following best explains the underlying mechanism?", "Which of the following is the most likely diagnosis?", "Which of the following is the most appropriate next step in management?", "Which of the following enzymes is deficient in this patient?"
+HOW TO WRITE THE STEM:
+- Start with patient demographics and a classic clinical vignette.
+- If visual=true, DO NOT mention the image finding in the stem. Write the question so the image is essential, for example: "A 7-year-old boy is brought in with a rapidly growing abdominal mass... A biopsy was performed. Which diagnosis is most likely?"
+- If visual=false, write the stem normally with all needed text clues.
+- End with a direct question sentence.
 
-ANSWER CHOICES: Exactly 5 options. All clinically plausible and parallel in structure. Each is one short phrase.
+WHEN TO SET visual=true:
+- Only when the answer depends on recognizing a classic image: histology, smear, rash, X-ray, CT, ECG, gross pathology, fundoscopy, microscopy, dermatology, pathology, radiology.
+- Roughly half of questions should be visual when possible, but do not force visual=true for topics without a strong image.
 
-EXPLANATION: 2-3 sentences maximum. State why the correct answer is right and briefly why the top 2 distractors are wrong. Be concise.
+WHEN visual=true, imagePrompt MUST be detailed and specific, like:
+"H&E histology slide showing starry sky pattern with tingible body macrophages, Burkitt lymphoma, 40x magnification, medical pathology textbook quality"
+"Peripheral blood smear Wright-Giemsa stain showing sickle-shaped red blood cells, HbSS disease"
+"Chest X-ray PA view right lower lobe consolidation with air bronchograms, pneumonia"
+"Skin photograph showing honey-crusted erosions on erythematous base, impetigo"
+"12-lead ECG showing ST elevation in II III aVF with reciprocal changes, inferior STEMI"
 
-imagePrompt: Aim for roughly HALF of questions to include an image. Include an "imagePrompt" field when the topic has a CLASSIC visual finding that is high-yield for USMLE (histology slide, peripheral blood smear, skin lesion/rash, chest X-ray, ECG, fundoscopy image, gross pathology). When you include an imagePrompt, do NOT describe the visual finding in the stem text — instead write the stem as if the student is looking at the image. The imagePrompt should be a detailed medical description like: "H&E stained histology slide showing starry sky pattern with tingible body macrophages, Burkitt lymphoma, 40x magnification, medical pathology textbook quality" or "Peripheral blood smear Wright-Giemsa stain showing sickle-shaped red blood cells, HbSS disease" or "Chest X-ray PA view right lower lobe consolidation with air bronchograms" or "Skin photograph showing honey-crusted erosions on erythematous base, impetigo" or "12-lead ECG showing ST elevation in leads II III aVF with reciprocal changes, inferior STEMI". For questions WITHOUT an imagePrompt, you may include descriptive text in the stem. Omit imagePrompt for topics with no strong visual association.
+EXPLANATION: 2-3 sentences maximum. State why the correct answer is right and briefly why the main distractor is wrong.
+
+Return JSON only. No markdown, no code fences, no extra text.`
 
 Return ONLY valid JSON. If count=1 return one object. If count>1 return a JSON array. Shape: {"stem":"...","options":["...","...","...","...","..."],"answerIndex":0,"explanation":"...","imagePrompt":"..."} No markdown, no code fences, no extra text.`;
 
@@ -405,12 +423,13 @@ Return ONLY valid JSON. If count=1 return one object. If count>1 return a JSON a
       const addedIndices=[];
       for(const obj of valid){
         let imageData='';
-        if(obj.imagePrompt){
+        const shouldShowImage = !!obj.visual && !!obj.imagePrompt;
+        if(shouldShowImage){
           setStatus('Generating image for: '+obj.imagePrompt.slice(0,70)+'...');
           imageData=await fetchAIImage(apiKey, obj.imagePrompt);
         }
         const idx=QUESTIONS.length;
-        QUESTIONS.push({ id:idx+1, system, discipline:'Mixed', difficulty, stem:obj.stem, options:obj.options, answerIndex:obj.answerIndex, explanation:obj.explanation||'', imageData });
+        QUESTIONS.push({ id:idx+1, system, discipline:'Mixed', difficulty, stem:obj.stem, options:obj.options, answerIndex:obj.answerIndex, explanation:obj.explanation||'', imageData, visual:!!obj.visual });
         addedIndices.push(idx);
       }
 
