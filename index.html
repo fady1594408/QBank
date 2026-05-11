@@ -302,41 +302,43 @@
     throw new Error('Could not parse JSON. RAW MODEL OUTPUT:\n'+raw.slice(0,2000));
   }
 
+
+  async function callImageModel(apiKey, modelName, promptText){
+    const url = 'https://generativelanguage.googleapis.com/v1beta/models/'+modelName+':generateContent?key='+encodeURIComponent(apiKey);
+    const body = {
+      contents:[{ parts:[{ text: promptText }] }],
+      generationConfig:{ responseModalities:['TEXT','IMAGE'] }
+    };
+    const res = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+    const raw = await res.text();
+    if(!res.ok){
+      console.error('Image model ['+modelName+'] HTTP '+res.status+':', raw.slice(0,600));
+      return { ok:false, error:'HTTP '+res.status+': '+raw.slice(0,200) };
+    }
+    let data;
+    try{ data=JSON.parse(raw); }catch(e){ console.error('Image model bad JSON:',raw.slice(0,300)); return { ok:false, error:'bad JSON' }; }
+    const parts = data?.candidates?.[0]?.content?.parts || [];
+    for(const p of parts){ if(p.inlineData?.data) return { ok:true, data:p.inlineData.data }; }
+    console.warn('Image model ['+modelName+']: no inlineData in response. Parts:', JSON.stringify(parts).slice(0,300));
+    return { ok:false, error:'no image in response' };
+  }
+
   async function fetchAIImage(apiKey, imagePrompt){
-    try{
-      const body={
-        contents:[{parts:[{text:'Generate a realistic high-quality medical education image: '+imagePrompt+'. Style: clinical pathology textbook quality, clear and detailed, suitable for medical students studying for USMLE Step 1. Do NOT add any text labels or watermarks on the image.'}]}],
-        generationConfig:{ responseModalities:['TEXT','IMAGE'] }
-      };
-      const res=await fetch(IMG_API+'?key='+encodeURIComponent(apiKey),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-      if(!res.ok){ console.warn('Image gen failed:',res.status); return ''; }
-      const data=await res.json();
-      const parts=data?.candidates?.[0]?.content?.parts||[];
-      for(const p of parts){ if(p.inlineData?.data) return p.inlineData.data; }
-    }catch(e){ console.warn('Image gen error:',e.message||e); }
+    // Try models in order of preference; gemini-2.5-flash-image is primary (500 free/day)
+    const models = [
+      'gemini-2.5-flash-image',
+      'gemini-3.1-flash-image-preview'
+    ];
+    for(const model of models){
+      setStatus('Generating image with '+model+'...');
+      const result = await callImageModel(apiKey, model, imagePrompt);
+      if(result.ok) return result.data;
+      console.warn('Model',model,'failed:',result.error,'. Trying next...');
+    }
+    setStatus('Image generation unavailable for this question — showing text only.','');
     return '';
   }
 
-  async function fetchAIImageWithFallback(apiKey, imagePrompt){
-    // Try primary model first, fall back to gemini-2.5-flash-image
-    const result = await fetchAIImage(apiKey, imagePrompt);
-    if(result) return result;
-    // Fallback: try gemini-2.5-flash-image
-    try{
-      const fallbackUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent';
-      const body={
-        contents:[{parts:[{text:'Generate a realistic high-quality medical education image: '+imagePrompt+'. Style: clinical pathology textbook quality, clear and detailed.'}]}],
-        generationConfig:{ responseModalities:['TEXT','IMAGE'] }
-      };
-      const res=await fetch(fallbackUrl+'?key='+encodeURIComponent(apiKey),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-      if(!res.ok){ console.warn('Fallback image gen failed:',res.status, await res.text()); return ''; }
-      const data=await res.json();
-      const parts=data?.candidates?.[0]?.content?.parts||[];
-      for(const p of parts){ if(p.inlineData?.data) return p.inlineData.data; }
-      console.warn('Fallback image gen: no inlineData in response', JSON.stringify(data).slice(0,300));
-    }catch(e){ console.warn('Fallback image gen error:',e.message||e); }
-    return '';
-  }
 
   async function generateQuestions(){
     const apiKey=$('apiKeyInput').value.trim();
@@ -363,7 +365,7 @@ ANSWER CHOICES: Exactly 5 options. All clinically plausible and parallel in stru
 
 EXPLANATION: 2-3 sentences maximum. State why the correct answer is right and briefly why the top 2 distractors are wrong. Be concise.
 
-imagePrompt: IMPORTANT — if this question is classically associated with a visual finding that a medical student needs to recognize (e.g. histology slide, peripheral blood smear, skin rash, chest X-ray, ECG, fundoscopy, gross pathology specimen), you MUST include an "imagePrompt" field with a detailed description such as: "H&E histology slide showing starry sky pattern with tingible body macrophages in Burkitt lymphoma, 40x magnification, medical pathology textbook quality" or "Peripheral blood smear showing sickle-shaped red blood cells, Wright-Giemsa stain, medical education quality" or "Chest X-ray PA view showing right lower lobe consolidation with air bronchograms, pneumonia". Be specific and descriptive. If no strong visual exists, omit the field.
+imagePrompt: Aim for roughly HALF of questions to include an image. Include an "imagePrompt" field when the topic has a CLASSIC visual finding that is high-yield for USMLE (histology slide, peripheral blood smear, skin lesion/rash, chest X-ray, ECG, fundoscopy image, gross pathology). When you include an imagePrompt, do NOT describe the visual finding in the stem text — instead write the stem as if the student is looking at the image. The imagePrompt should be a detailed medical description like: "H&E stained histology slide showing starry sky pattern with tingible body macrophages, Burkitt lymphoma, 40x magnification, medical pathology textbook quality" or "Peripheral blood smear Wright-Giemsa stain showing sickle-shaped red blood cells, HbSS disease" or "Chest X-ray PA view right lower lobe consolidation with air bronchograms" or "Skin photograph showing honey-crusted erosions on erythematous base, impetigo" or "12-lead ECG showing ST elevation in leads II III aVF with reciprocal changes, inferior STEMI". For questions WITHOUT an imagePrompt, you may include descriptive text in the stem. Omit imagePrompt for topics with no strong visual association.
 
 Return ONLY valid JSON. If count=1 return one object. If count>1 return a JSON array. Shape: {"stem":"...","options":["...","...","...","...","..."],"answerIndex":0,"explanation":"...","imagePrompt":"..."} No markdown, no code fences, no extra text.`;
 
@@ -405,7 +407,7 @@ Return ONLY valid JSON. If count=1 return one object. If count>1 return a JSON a
         let imageData='';
         if(obj.imagePrompt){
           setStatus('Generating image for: '+obj.imagePrompt.slice(0,70)+'...');
-          imageData=await fetchAIImageWithFallback(apiKey, obj.imagePrompt);
+          imageData=await fetchAIImage(apiKey, obj.imagePrompt);
         }
         const idx=QUESTIONS.length;
         QUESTIONS.push({ id:idx+1, system, discipline:'Mixed', difficulty, stem:obj.stem, options:obj.options, answerIndex:obj.answerIndex, explanation:obj.explanation||'', imageData });
