@@ -361,13 +361,13 @@ STEM (3-6 sentences total):
 
 ANSWER CHOICES: Exactly 5 options. All clinically plausible and parallel in structure. Each is one short phrase.
 
-EXPLANATION: 3-5 sentences. State why the correct answer is right, then explain why each wrong answer is incorrect.
+EXPLANATION: 2-3 sentences maximum. State why the correct answer is right and briefly why the top 2 distractors are wrong. Be concise.
 
 imagePrompt: IMPORTANT — if this question is classically associated with a visual finding that a medical student needs to recognize (e.g. histology slide, peripheral blood smear, skin rash, chest X-ray, ECG, fundoscopy, gross pathology specimen), you MUST include an "imagePrompt" field with a detailed description such as: "H&E histology slide showing starry sky pattern with tingible body macrophages in Burkitt lymphoma, 40x magnification, medical pathology textbook quality" or "Peripheral blood smear showing sickle-shaped red blood cells, Wright-Giemsa stain, medical education quality" or "Chest X-ray PA view showing right lower lobe consolidation with air bronchograms, pneumonia". Be specific and descriptive. If no strong visual exists, omit the field.
 
 Return ONLY valid JSON. If count=1 return one object. If count>1 return a JSON array. Shape: {"stem":"...","options":["...","...","...","...","..."],"answerIndex":0,"explanation":"...","imagePrompt":"..."} No markdown, no code fences, no extra text.`;
 
-    const textBody={ contents:[{parts:[{text:prompt}]}], generationConfig:{ temperature:0.4, topP:0.9, maxOutputTokens:4000 } };
+    const textBody={ contents:[{parts:[{text:prompt}]}], generationConfig:{ temperature:0.4, topP:0.9, maxOutputTokens:8192 } };
 
     try{
       const res=await fetch(TEXT_API+'?key='+encodeURIComponent(apiKey),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(textBody)});
@@ -376,7 +376,21 @@ Return ONLY valid JSON. If count=1 return one object. If count>1 return a JSON a
       let data; try{data=JSON.parse(rawText);}catch{throw new Error('Could not parse API response: '+rawText.slice(0,800));}
       const modelText=data?.candidates?.[0]?.content?.parts?.map(p=>p.text||'').join('\n')||'';
       if(!modelText) throw new Error('No text from model. Response: '+rawText.slice(0,1000));
-      const parsed=parseJSON(modelText);
+      let parsed;
+      try{ parsed=parseJSON(modelText); }
+      catch(e){
+        // Try to repair truncated JSON array by closing it
+        let repaired=modelText.replace(/```json/gi,'').replace(/```/g,'').trim();
+        // remove trailing comma + close array/object
+        repaired=repaired.replace(/,\s*$/, '');
+        if(repaired.startsWith('[')){
+          // find last complete object and close the array
+          const lastClose=repaired.lastIndexOf('}');
+          if(lastClose>0) repaired=repaired.slice(0,lastClose+1)+']';
+        }
+        try{ parsed=JSON.parse(repaired); }
+        catch(e2){ throw new Error('Could not parse JSON. RAW MODEL OUTPUT:\n'+modelText.slice(0,2000)); }
+      }
       const items=Array.isArray(parsed)?parsed:[parsed];
       const valid=items.filter(o=>o.stem&&Array.isArray(o.options)&&o.options.length===5&&typeof o.answerIndex==='number');
       if(!valid.length) throw new Error('No valid questions in model output. RAW='+modelText.slice(0,1200));
